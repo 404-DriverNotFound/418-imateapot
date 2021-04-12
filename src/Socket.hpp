@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minckim <minckim@student.42.fr>            +#+  +:+       +#+        */
+/*   By: amin <amin@student.42seoul.kr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/04/08 17:45:05 by minckim           #+#    #+#             */
-/*   Updated: 2021/04/09 08:14:16 by minckim          ###   ########.fr       */
+/*   Updated: 2021/04/12 19:46:48 by amin             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,10 +15,10 @@
 
 class Socket : public sockaddr
 {
-	int			fd;
+	int fd;
 
-	public:
-	void		bind();
-	void		accept();
-	void		listen();
+public:
+	void bind();
+	void accept();
+	void listen();
 };
