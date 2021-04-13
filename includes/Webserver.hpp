@@ -1,5 +1,5 @@
 #pragma once
-#include "ConfigWebserver.hpp"
+#include "ConfigGroup.hpp"
 #include "Path.hpp"
 #include "Server.hpp"
 #include <sys/select.h>
@@ -7,7 +7,7 @@
 
 class Webserver
 {
-	ConfigWebserver		config;
+	ConfigGroup		config;
 	fd_set				to_be_checked;
 	fd_set				to_be_checked_read;
 	fd_set				to_be_checked_write;

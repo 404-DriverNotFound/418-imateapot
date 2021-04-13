@@ -17,6 +17,7 @@ class Config
 		uint32_t		timeout;			// def = 5s
 		Path			auth;
 		bool			methods[6];
+		std::string		location_path;
 
 	public:
 
