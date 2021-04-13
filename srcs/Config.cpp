@@ -25,6 +25,7 @@ Config::Config(const Config &src, std::string &loc_path):
 	autoindex(src.autoindex),
 	timeout(src.timeout),
 	auth(src.auth),
+	server_root(src.server_root),
 	location_path(loc_path)
 {
 	for (int i = 0; i < 6; i++)
