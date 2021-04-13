@@ -1,5 +1,5 @@
 #include "ConfigGroup.hpp"
-
+#include <list>
 /**
  * ConfigGroup 
  * config file 전체를 파싱하는 생성자
@@ -57,12 +57,13 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 		}
 		if (is_location_start ||
 			(split[0].compare("method") && split.size() > 2))
-			throw ConfigGroup::ConfigFormatException();
+                throw ConfigGroup::ConfigFormatException();
 		
         server_config.parseConfig(split, false);
 		std::getline(config_file, line);
     }
     server_vector.push_back(server_config);
+    _configs.push_back(server_vector);
 }
 
 Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line, std::string &loc, Config &server_config)
@@ -78,7 +79,9 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
         if (line[0] != '\t' || line[1] != '\t')
 			break;
 		if (line[2] == '\t')
+        {
 			throw ConfigGroup::ConfigFormatException();
+        }
 		std::vector<std::string> split = ft_split(line.substr(2), ' ');
 		if (split[0].compare("method") && split.size() > 2)
 			throw ConfigGroup::ConfigFormatException();
