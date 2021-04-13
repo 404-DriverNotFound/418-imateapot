@@ -19,5 +19,5 @@ class Webserver
 
 	private:
 		void parse_config(const Path &); // config 파일 해석
-		void create_server(const ConfigServer &);
+		//void create_server(const ConfigServer &);
 };

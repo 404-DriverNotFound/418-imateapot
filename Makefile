@@ -1,5 +1,7 @@
 SRC		= webserv.cpp \
-			ConfigGroup.cpp
+			ConfigGroup.cpp \
+			Config.cpp \
+			utils.cpp
 
 SRCDIR	= ./srcs/
 SRCS	= $(addprefix $(SRCDIR), $(SRC))
@@ -10,7 +12,7 @@ INCDIR	= ./includes/
 NAME	= webserv
 
 CC		= clang++
-CCFLAG	= -std=c++98 -Wall -Wextra -Werror
+CCFLAG	= -std=c++98 -g -fsanitize=address#-Wall -Wextra -Werror
 RM		= rm -f
 
 %.o:		%.cpp
@@ -26,7 +28,6 @@ clean:
 
 fclean:		clean
 			$(RM) $(NAME)
-			$(MAKE) -C fclean
 
 re:			fclean all
 

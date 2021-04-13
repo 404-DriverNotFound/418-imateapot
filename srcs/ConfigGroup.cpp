@@ -29,10 +29,11 @@ ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20):
 
 ConfigGroup::~ConfigGroup() {}
 
-void ConfigGroup::parseServer(std::ifstream config_file, std::string &line)
+void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 {
 	bool is_location_start = false;
 	std::vector<Config> server_vector;
+    Config server_config;
 
 	std::getline(config_file, line);
 
@@ -47,16 +48,43 @@ void ConfigGroup::parseServer(std::ifstream config_file, std::string &line)
 		std::vector<std::string> split = ft_split(line.substr(1), ' ');
 		if (!split[0].compare("location"))
 		{
+            if (split.size() > 2)
+			    throw ConfigGroup::ConfigFormatException();
 			is_location_start = true;
-			// TODO : Location 파싱하기
+            server_vector.push_back(parseLocation(config_file, line, split[1], server_config));
 			continue;
 		}
 		if (is_location_start ||
 			(split[0].compare("method") && split.size() > 2))
 			throw ConfigGroup::ConfigFormatException();
 		
+        server_config.parseConfig(split, false);
 		std::getline(config_file, line);
     }
+    server_vector.push_back(server_config);
+}
+
+Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line, std::string &loc, Config &server_config)
+{
+    Config location_config(server_config, loc);
+
+	std::getline(config_file, line);
+
+	while (!config_file.eof())
+    {
+        if (isBlankLine(line))
+            continue;
+        if (line[0] != '\t' || line[1] != '\t')
+			break;
+		if (line[2] == '\t')
+			throw ConfigGroup::ConfigFormatException();
+		std::vector<std::string> split = ft_split(line.substr(2), ' ');
+		if (split[0].compare("method") && split.size() > 2)
+			throw ConfigGroup::ConfigFormatException();
+        location_config.parseConfig(split, true);
+		std::getline(config_file, line);
+    }
+    return (location_config);
 }
 
 /* --------- getter ---------*/
