@@ -92,7 +92,7 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
 }
 
 /* --------- getter ---------*/
-int ConfigGroup::getSeverCnt()
+int ConfigGroup::getServerCnt()
 {
     return (_configs.size());
 }

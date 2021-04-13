@@ -22,7 +22,7 @@ class ConfigGroup
 		~ConfigGroup();
 
 		/* --------- getter ---------*/
-		int getSeverCnt();
+		int getServerCnt();
 		uint32_t getMaxConnection();
 		std::vector<Config> &getConfig(int index);
 
