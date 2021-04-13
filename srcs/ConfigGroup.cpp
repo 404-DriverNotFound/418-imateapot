@@ -46,10 +46,11 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 		if (line[1] == '\t')
 			throw ConfigGroup::ConfigFormatException();
 		std::vector<std::string> split = ft_split(line.substr(1), ' ');
-		if (!split[0].compare("location"))
+        
+        if (!split[0].compare("location"))
 		{
             if (split.size() > 2)
-			    throw ConfigGroup::ConfigFormatException();
+                throw ConfigGroup::ConfigFormatException();
 			is_location_start = true;
             server_vector.push_back(parseLocation(config_file, line, split[1], server_config));
 			continue;

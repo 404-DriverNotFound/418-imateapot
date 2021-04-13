@@ -3,7 +3,7 @@
 
 Config::Config():
 	port(80),
-	index_page("index.html"),
+	index("index.html"),
 	error_page("error.html"),
 	head_length(8000),
 	body_length(1000000),
@@ -18,7 +18,7 @@ Config::Config(const Config &src, std::string &loc_path):
 	server_name(src.server_name),
 	root(src.root),
 	port(src.port),
-	index_page(src.index_page),
+	index(src.index),
 	error_page(src.error_page),
 	head_length(src.head_length),
 	body_length(src.body_length),
@@ -47,9 +47,9 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 			throw ConfigGroup::ConfigFormatException();
 		this->port = std::stoi(split[1]);
 	}
-	else if (!split[0].compare("index_page"))
+	else if (!split[0].compare("index"))
 	{
-		this->index_page = split[1];
+		this->index = split[1];
 	}
 	else if (!split[0].compare("error_page"))
 	{
