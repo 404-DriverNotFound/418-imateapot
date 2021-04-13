@@ -13,25 +13,56 @@ ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20):
     if (!config_file.is_open())
         throw ConfigGroup::NoConfigFileException();
 
+	std::string line;
+    std::getline(config_file, line);
+
     while (!config_file.eof())
     {
-        std::string line;
-        std::getline(config_file, line);
         if (isBlankLine(line))
             continue;
         if (line.compare("server"))
             throw ConfigGroup::ConfigFormatException();
-        // TODO : server parsing 함수 추가
+        this->parseServer(config_file, line);
     }
     config_file.close();
 }
 
 ConfigGroup::~ConfigGroup() {}
 
+void ConfigGroup::parseServer(std::ifstream config_file, std::string &line)
+{
+	bool is_location_start = false;
+	std::vector<Config> server_vector;
+
+	std::getline(config_file, line);
+
+	while (!config_file.eof())
+    {
+        if (isBlankLine(line))
+            continue;
+        if (line[0] != '\t')
+			break;
+		if (line[1] == '\t')
+			throw ConfigGroup::ConfigFormatException();
+		std::vector<std::string> split = ft_split(line.substr(1), ' ');
+		if (!split[0].compare("location"))
+		{
+			is_location_start = true;
+			// TODO : Location 파싱하기
+			continue;
+		}
+		if (is_location_start ||
+			(split[0].compare("method") && split.size() > 2))
+			throw ConfigGroup::ConfigFormatException();
+		
+		std::getline(config_file, line);
+    }
+}
+
 /* --------- getter ---------*/
 int ConfigGroup::getSeverCnt()
 {
-    return (_configs.length());
+    return (_configs.size());
 }
 
 uint32_t ConfigGroup::getMaxConnection()

@@ -6,6 +6,7 @@
 #include <exception>
 #include "Path.hpp"
 #include "Config.hpp"
+#include "utils.hpp"
 
 class ConfigGroup
 {
@@ -13,12 +14,14 @@ class ConfigGroup
 		uint32_t							_max_connection; // def = 20
 		std::vector< std::vector<Config> >	_configs;
 
+		void parseServer(std::ifstream config_file, std::string &line);
+
 	public:
 		ConfigGroup(const std::string &path, uint32_t max_connection = 20); // constructor
 		~ConfigGroup();
 
 		/* --------- getter ---------*/
-		int getSeverCnt(); // config length return
+		int getSeverCnt();
 		uint32_t getMaxConnection();
 		std::vector<Config> &getConfig(int index);
 

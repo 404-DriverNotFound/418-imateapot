@@ -1,24 +1,22 @@
 #pragma once
-#include "Path.hpp"
 #include "Method.hpp"
 #include <string>
 
-class Config
+struct Config
 {
-	private:
-		std::string		server_name;
-		Path			root;
-		uint16_t		port;				// def = 80;
-		Path			index_page;			// def = index.html
-		Path			error_page;			// def = error.html
-		uint64_t		head_length_max;	// def = 8k
-		uint64_t		body_length_max;	// def = 1M
-		bool			autoindex;			// def = off
-		uint32_t		timeout;			// def = 5s
-		Path			auth;
-		bool			methods[6];
-		std::string		location_path;
+	std::string		server_name;
+	std::string		root;
+	uint16_t		port;				// def = 80;
+	std::string		index_page;			// def = index.html
+	std::string		error_page;			// def = error.html
+	uint64_t		head_length_max;	// def = 8k
+	uint64_t		body_length_max;	// def = 1M
+	bool			autoindex;			// def = off
+	uint32_t		timeout;			// def = 5s
+	std::string		auth;
+	bool			methods[6];			// def = GET HEAD
+	std::string		location_path;
 
-	public:
-
+	Config();
+	Config(const Config &src);
 };
