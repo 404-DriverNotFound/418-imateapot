@@ -24,6 +24,8 @@ ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20):
             throw ConfigGroup::ConfigFormatException();
         this->parseServer(config_file, line);
     }
+	if (!checkDupServer())
+		throw ConfigGroup::ConfigFormatException();
     config_file.close();
 }
 
@@ -72,8 +74,6 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
     server_vector.push_back(server_config);
 
 	_configs.push_back(server_vector);
-	if (!checkDupServer())
-		throw ConfigGroup::ConfigFormatException();
 
 }
 
@@ -121,22 +121,14 @@ std::vector<Config> &ConfigGroup::getConfig(int index)
 }
 bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
 {
-	std::vector<Config>::iterator it;
-	std::vector<Config>::iterator ite;
-	it = server_vector.begin();
-	ite = server_vector.end();
+	int size = server_vector.size();
 
-	for (; it < ite ; it++)
+	for (int i = 0; i < size; i++)
 	{
-		std::string temp = it.base()->location_path;
-		if (it < ite)
+		for (int j = 0; j < size - i; j++)
 		{
-			it++;
-			if (it == ite)
-				break;
-			if (temp == it.base()->location_path)
+			if ((j + 1 < size) && (server_vector[j].location_path == server_vector[j + 1].location_path))
 				return false;
-			it--;
 		}
 	}
 	return true;
@@ -144,14 +136,14 @@ bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
 
 bool ConfigGroup::checkDupServer()
 {
-
-	for (int i = 0; i < getServerCnt() - 1; i++)
+	int size = getServerCnt();
+	for (int i = 0; i < size ; i++)
 	{
-		uint16_t temp_port = _configs[i][0].port;
-		std::string temp_server_name = _configs[i][0].server_name;
-
-		if ((temp_port == _configs[i + 1][0].port) || (temp_server_name == _configs[i + 1][0].server_name))
-			return false;
+		for (int j = 0; j < size - i; j++)
+		{
+			if ((j + 1 < size) && (_configs[j][0].port == _configs[j + 1][0].port || _configs[j][0].server_name == _configs[j + 1][0].server_name))
+					return false;
+		}
 	}
 	return true;
 }
