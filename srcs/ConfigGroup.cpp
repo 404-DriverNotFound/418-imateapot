@@ -119,15 +119,16 @@ std::vector<Config> &ConfigGroup::getConfig(int index)
 {
     return (_configs[index]);
 }
+
 bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
 {
 	int size = server_vector.size();
 
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < size - 1; i++)
 	{
-		for (int j = 0; j < size - i; j++)
+		for (int j = i; j < size; j++)
 		{
-			if ((j + 1 < size) && (server_vector[j].location_path == server_vector[j + 1].location_path))
+			if (server_vector[i].location_path == server_vector[j].location_path)
 				return false;
 		}
 	}
@@ -137,11 +138,13 @@ bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
 bool ConfigGroup::checkDupServer()
 {
 	int size = getServerCnt();
-	for (int i = 0; i < size ; i++)
+
+	for (int i = 0; i < size - 1; i++)
 	{
-		for (int j = 0; j < size - i; j++)
+		for (int j = i; j < size; j++)
 		{
-			if ((j + 1 < size) && (_configs[j][0].port == _configs[j + 1][0].port || _configs[j][0].server_name == _configs[j + 1][0].server_name))
+			if ((_configs[i][0].port == _configs[j][0].port ||
+				_configs[i][0].server_name == _configs[j][0].server_name))
 					return false;
 		}
 	}
