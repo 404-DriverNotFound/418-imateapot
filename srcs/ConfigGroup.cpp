@@ -1,8 +1,9 @@
 #include "ConfigGroup.hpp"
+
 /**
- * ConfigGroup 
+ * ConfigGroup
  * config file 전체를 파싱하는 생성자
- * @param  {std::string} path        : config file 경로 
+ * @param  {std::string} path        : config file 경로
  * @param  {uint32_t} max_connection : 서버에서 받을 수 있는 최대 연결 수 (기본값 20)
  */
 ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20): _max_connection(max_connection)
@@ -47,8 +48,9 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 			break;
 		if (line[1] == '\t')
 			throw ConfigGroup::ConfigFormatException();
+
 		std::vector<std::string> split = ft_split(line.substr(1), ' ');
-        
+
         if (!split[0].compare("location"))
 		{
             if (split.size() > 2)
@@ -60,12 +62,19 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 		if (is_location_start ||
 			(split[0].compare("method") && split.size() > 2))
                 throw ConfigGroup::ConfigFormatException();
-		
+
         server_config.parseConfig(split, false);
 		std::getline(config_file, line);
     }
+
+	if (!checkDupLocation(server_vector))
+		throw ConfigGroup::ConfigFormatException();
     server_vector.push_back(server_config);
-    _configs.push_back(server_vector);
+
+	_configs.push_back(server_vector);
+	if (!checkDupServer())
+		throw ConfigGroup::ConfigFormatException();
+
 }
 
 Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line, std::string &loc, Config &server_config)
@@ -78,15 +87,17 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
     {
         if (isBlankLine(line))
             continue;
+
         if (line[0] != '\t' || line[1] != '\t')
 			break;
 		if (line[2] == '\t')
-        {
 			throw ConfigGroup::ConfigFormatException();
-        }
+
 		std::vector<std::string> split = ft_split(line.substr(2), ' ');
+
 		if (split[0].compare("method") && split.size() > 2)
 			throw ConfigGroup::ConfigFormatException();
+
         location_config.parseConfig(split, true);
 		std::getline(config_file, line);
     }
@@ -108,6 +119,43 @@ std::vector<Config> &ConfigGroup::getConfig(int index)
 {
     return (_configs[index]);
 }
+bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
+{
+	std::vector<Config>::iterator it;
+	std::vector<Config>::iterator ite;
+	it = server_vector.begin();
+	ite = server_vector.end();
+
+	for (; it < ite ; it++)
+	{
+		std::string temp = it.base()->location_path;
+		if (it < ite)
+		{
+			it++;
+			if (it == ite)
+				break;
+			if (temp == it.base()->location_path)
+				return false;
+			it--;
+		}
+	}
+	return true;
+}
+
+bool ConfigGroup::checkDupServer()
+{
+
+	for (int i = 0; i < getServerCnt() - 1; i++)
+	{
+		uint16_t temp_port = _configs[i][0].port;
+		std::string temp_server_name = _configs[i][0].server_name;
+
+		if ((temp_port == _configs[i + 1][0].port) || (temp_server_name == _configs[i + 1][0].server_name))
+			return false;
+	}
+	return true;
+}
+
 
 const char *ConfigGroup::NoConfigFileException::what() const throw()
 {
