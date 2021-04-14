@@ -1,6 +1,11 @@
 #pragma once
+#ifdef __linux__
+	#include <stdint.h>
+#endif
 #include "Method.hpp"
+#include <cstdlib>
 #include <string>
+#include <vector>
 
 struct Config
 {

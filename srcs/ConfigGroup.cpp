@@ -1,4 +1,5 @@
 #include "ConfigGroup.hpp"
+
 /**
  * ConfigGroup 
  * config file 전체를 파싱하는 생성자
@@ -7,7 +8,7 @@
  */
 ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20): _max_connection(max_connection)
 {
-    std::ifstream config_file(path);
+    std::ifstream config_file(path.c_str());
 
     if (!config_file.is_open())
         throw ConfigGroup::NoConfigFileException();
