@@ -1,5 +1,4 @@
 #include "ConfigGroup.hpp"
-#include <list>
 /**
  * ConfigGroup 
  * config file 전체를 파싱하는 생성자
@@ -40,7 +39,10 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 	while (!config_file.eof())
     {
         if (isBlankLine(line))
+        {
+            std::getline(config_file, line);
             continue;
+        }
         if (line[0] != '\t')
 			break;
 		if (line[1] == '\t')

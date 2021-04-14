@@ -7,8 +7,6 @@ class Client;
 
 #define BUFFER_SIZE 16
 
-using std::string;
-
 enum e_status
 {
 	RECV_START_LINE,
@@ -23,7 +21,7 @@ enum e_status
 class Client
 {
 	Socket sock;
-	string buffer;
+	std::string buffer;
 	e_status status;
 	Http req;
 	Http res;
