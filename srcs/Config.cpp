@@ -115,6 +115,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 		else
 		{
 			this->root = split[1];
+			if (this->root.data()[0] != '/')
+				throw ConfigGroup::ConfigFormatException();
 			this->server_root = this->root;
 		}
 	}
