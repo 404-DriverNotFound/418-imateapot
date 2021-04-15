@@ -7,7 +7,7 @@ struct Config
 	std::string		server_name;
 	std::string		root;
 	uint16_t		port;				// def = 80;
-	std::string		index;			// def = index.html
+	std::string		index;				// def = index.html
 	std::string		error_page;			// def = error.html
 	uint64_t		head_length;		// def = 8k
 	uint64_t		body_length;		// def = 1M

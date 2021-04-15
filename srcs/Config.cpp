@@ -39,8 +39,6 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 		if (is_location)
 			throw ConfigGroup::ConfigFormatException();
 		this->server_name = split[1];
-		// TODO: 복수의 server_name이 들어오는 것을 허용할지
-		// 금요일에 이야기해보기
 	}
 	else if (!split[0].compare("port"))
 	{

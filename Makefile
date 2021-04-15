@@ -1,7 +1,10 @@
-SRC		= webserv.cpp \
-			ConfigGroup.cpp \
+SRC		=	Client.cpp \
 			Config.cpp \
-			utils.cpp
+			ConfigGroup.cpp \
+			Http.cpp \
+			Method.cpp \
+			utils.cpp \
+			webserv.cpp
 
 SRCDIR	= ./srcs/
 SRCS	= $(addprefix $(SRCDIR), $(SRC))

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 enum e_method
 {
@@ -9,3 +10,6 @@ enum e_method
 	TRACE,
 	DELETE,
 };
+
+int methodToNum(const std::string &);
+std::string numToMethod(const e_method);

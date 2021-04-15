@@ -1,5 +1,4 @@
 #pragma once
-class Client;
 #include "Socket.hpp"
 #include "Http.hpp"
 #include <sys/types.h>
@@ -20,18 +19,24 @@ enum e_status
 
 class Client
 {
-	Socket sock;
-	std::string buffer;
-	e_status status;
-	Http req;
-	Http res;
-	Config &config_location;
+	private:
+		Socket			_sock;
+		std::string		_buffer;
+		e_status		_status;
+		HttpRequest		_request;
+		HttpResponse	_response;
+		Config			&_config_location;
 
-public:
-	void recv_start_line();
-	void recv_header();
-	void recv_body();
-	void proc_cgi();
-	void make_msg();
-	void send_msg();
+	public:
+		void recvStartLine(const std::string &);
+		void recvHeader();
+		void recvBody();
+		void procCgi();
+		void makeMsg();
+		void sendMsg();
+
+		class RequestFormatException: public std::exception
+		{
+			virtual const char *what() const throw(); 
+		};
 };
