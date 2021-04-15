@@ -4,6 +4,8 @@
 #endif
 #include <string>
 
+#define ERROR -1
+
 enum e_method
 {
 	GET,
