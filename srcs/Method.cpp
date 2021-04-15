@@ -7,17 +7,17 @@
  */
 int methodToNum(const std::string &name)
 {
-	if (name.compare("GET"))
+	if (!name.compare("GET"))
 		return GET;
-	else if (name.compare("HEAD"))
+	else if (!name.compare("HEAD"))
 		return HEAD;
-	else if (name.compare("PUT"))
+	else if (!name.compare("PUT"))
 		return PUT;
-	else if (name.compare("POST"))
+	else if (!name.compare("POST"))
 		return POST;
-	else if (name.compare("TRACE"))
+	else if (!name.compare("TRACE"))
 		return TRACE;
-	else if (name.compare("DELETE"))
+	else if (!name.compare("DELETE"))
 		return DELETE;
 	else
 		return -1;
