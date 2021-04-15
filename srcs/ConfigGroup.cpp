@@ -31,22 +31,28 @@ ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20):
 
 ConfigGroup::~ConfigGroup() {}
 
+/**
+ * parseServer
+ * conf file을 gnl을 통해 읽은 뒤, server 단에 맞추어 _configs에 저장
+ * @param  {std::ifstream} config_file : argv[1](config file 경로)
+ * @param  {std::string} line          : gnl을 통해 읽은 라인
+ */
 void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 {
 	bool is_location_start = false;
 	std::vector<Config> server_vector;
-    Config server_config;
+	Config server_config;
 
 	std::getline(config_file, line);
 
 	while (!config_file.eof())
-    {
-        if (isBlankLine(line))
-        {
-            std::getline(config_file, line);
-            continue;
-        }
-        if (line[0] != '\t')
+	{
+		if (isBlankLine(line))
+		{
+			std::getline(config_file, line);
+			continue;
+		}
+		if (line[0] != '\t')
 			break;
 		if (line[1] == '\t')
 			throw ConfigGroup::ConfigFormatException();
@@ -76,7 +82,15 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 	_configs.push_back(server_vector);
 
 }
-
+/**
+ * parseLocation
+ * server단 안에 있는 location부분을 파싱하는 함수
+ * @param  {std::ifstream} config_file : config file 경로
+ * @param  {std::string} line          : gnl을 통해 읽은 라인
+ * @param  {std::string} loc           : line을 split을 통해 나눠진 location_path
+ * @param  {Config} server_config      : Config 구조체
+ * @return {Config}                    : location의 정보가 들어간 Config 구조체
+ */
 Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line, std::string &loc, Config &server_config)
 {
     Config location_config(server_config, loc);
@@ -120,6 +134,12 @@ std::vector<Config> &ConfigGroup::getConfig(int index)
     return (_configs[index]);
 }
 
+/**
+ * checkDupLocation
+ *
+ * @param  {std::vector<Config>} server_vector : 1개의 server 단의 정보를 가진 vector
+ * @return {bool}                              : location_path가 중복일 시, false
+ */
 bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
 {
 	int size = server_vector.size();
@@ -135,6 +155,12 @@ bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
 	return true;
 }
 
+/**
+ * checkDupServer
+ *
+ * @return {bool}  : 여러 개의 server 단의 port와 server_name을 비교하여 중복 검사 실시
+ *                   중복이 있을 시, false
+ */
 bool ConfigGroup::checkDupServer()
 {
 	int size = getServerCnt();
@@ -150,7 +176,6 @@ bool ConfigGroup::checkDupServer()
 	}
 	return true;
 }
-
 
 const char *ConfigGroup::NoConfigFileException::what() const throw()
 {
