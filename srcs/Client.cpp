@@ -24,7 +24,7 @@ void Client::recvStartLine(const std::string &line)
 	start_line.method = static_cast<e_method>(method_num);
 
 	std::vector<std::string> split_path = ft_split(split[1], '/');
-	if (split_path[0].find("http:")) // absolute path로 요청되었을 경우의 전처리
+	if (split_path[0].find("http:") != std::string::npos) // absolute path로 요청되었을 경우의 전처리
 	{
 		this->_request.insertToHeader("Host", split_path[2]);
 		split[1].erase(0, 7);							// remove "http://" from path
