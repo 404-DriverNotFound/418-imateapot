@@ -146,7 +146,7 @@ bool ConfigGroup::checkDupLocation(std::vector<Config> server_vector)
 
 	for (int i = 0; i < size - 1; i++)
 	{
-		for (int j = i; j < size; j++)
+		for (int j = i + 1; j < size; j++)
 		{
 			if (server_vector[i].location_path == server_vector[j].location_path)
 				return false;
@@ -167,9 +167,9 @@ bool ConfigGroup::checkDupServer()
 
 	for (int i = 0; i < size - 1; i++)
 	{
-		for (int j = i; j < size; j++)
+		for (int j = i + 1; j < size; j++)
 		{
-			if ((_configs[i][0].port == _configs[j][0].port ||
+			if ((_configs[i][0].port == _configs[j][0].port &&
 				_configs[i][0].server_name == _configs[j][0].server_name))
 					return false;
 		}
