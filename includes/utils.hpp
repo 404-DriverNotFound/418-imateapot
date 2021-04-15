@@ -1,5 +1,7 @@
 #pragma once
-
+#ifdef __linux__
+	#include <stdint.h>
+#endif
 #include <iostream>
 #include <sstream>
 #include <vector>

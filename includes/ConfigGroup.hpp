@@ -1,4 +1,7 @@
 #pragma once
+#ifdef __linux__
+	#include <stdint.h>
+#endif
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -25,13 +28,16 @@ class ConfigGroup
 		uint32_t getMaxConnection();
 		std::vector<Config> &getConfig(int index);
 
+		bool checkDupLocation(std::vector<Config> server_vector);
+		bool checkDupServer();
+
 		class NoConfigFileException: public std::exception
 		{
-			virtual const char *what() const throw(); 
+			virtual const char *what() const throw();
 		};
 		class ConfigFormatException: public std::exception
 		{
-			virtual const char *what() const throw(); 
+			virtual const char *what() const throw();
 		};
 };
 

@@ -1,4 +1,7 @@
 #pragma once
+#ifdef __linux__
+	#include <stdint.h>
+#endif
 #include "Client.hpp"
 #include "Config.hpp"
 #include "ConfigGroup.hpp"

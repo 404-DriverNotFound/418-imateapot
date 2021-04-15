@@ -1,4 +1,7 @@
 #pragma once
+#ifdef __linux__
+	#include <stdint.h>
+#endif
 #include "Socket.hpp"
 #include "Http.hpp"
 #include <sys/types.h>

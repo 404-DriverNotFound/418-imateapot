@@ -44,7 +44,7 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	{
 		if (is_location)
 			throw ConfigGroup::ConfigFormatException();
-		this->port = std::stoi(split[1]);
+		this->port = std::atoi(split[1].c_str());
 	}
 	else if (!split[0].compare("index"))
 	{
@@ -56,11 +56,11 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("head_length"))
 	{
-		this->head_length = std::stoll(split[1]);
+		this->head_length = std::atoi(split[1].c_str());
 	}
 	else if (!split[0].compare("body_length"))
 	{
-		this->head_length = std::stoll(split[1]);
+		this->head_length = std::atoi(split[1].c_str());
 	}
 	else if (!split[0].compare("autoindex"))
 	{
@@ -73,7 +73,7 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("timeout"))
 	{
-		this->timeout = std::stoi(split[1]);
+		this->timeout = std::atoi(split[1].c_str());
 	}
 	else if (!split[0].compare("auth"))
 	{
@@ -113,6 +113,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 		else
 		{
 			this->root = split[1];
+			if (this->root.data()[0] != '/')
+				throw ConfigGroup::ConfigFormatException();
 			this->server_root = this->root;
 		}
 	}
