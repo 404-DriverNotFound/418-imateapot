@@ -2,6 +2,9 @@
 #ifdef __linux__
 	#include <stdint.h>
 #endif
+#include <string>
+
+#define ERROR -1
 
 enum e_method
 {
@@ -12,3 +15,6 @@ enum e_method
 	TRACE,
 	DELETE,
 };
+
+int methodToNum(const std::string &);
+std::string numToMethod(const e_method);
