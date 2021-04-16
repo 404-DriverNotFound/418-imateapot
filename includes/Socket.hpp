@@ -13,10 +13,11 @@ class Socket : public sockaddr_in
 	public:
 		Socket(uint16_t port);
 
+		int getFd();
 		// void bind();
 		void accept();
 		void listen();
-	
+
 		class SocketCreationException: public std::exception
 		{
 			virtual const char *what() const throw(); 

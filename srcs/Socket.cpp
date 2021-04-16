@@ -12,6 +12,11 @@ Socket::Socket(uint16_t port): _port(port)
 		throw Socket::BindException();
 }
 
+int Socket::getFd()
+{
+	return this->_fd;
+}
+
 const char *Socket::SocketCreationException::what() const throw()
 {
 	return "SocketCreationException: Failed to get socket fd!";
