@@ -1,7 +1,4 @@
 #pragma once
-#ifdef __linux__
-	#include <stdint.h>
-#endif
 #include "webserv.hpp"
 
 class Socket : public sockaddr_in

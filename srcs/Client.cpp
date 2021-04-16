@@ -1,9 +1,8 @@
-#include "Client.hpp"
-#include "utils.hpp"
+#include "webserv.hpp"
 
 /**
- * request의 start line을 파싱하여 Client의 멤버 변수에 저장한다.
- * 
+ * Client::recvStartLine
+ * @brief  request의 start line을 파싱하여 Client의 멤버 변수에 저장한다.
  * @param  {std::string} line : request의 start line
  */
 void Client::recvStartLine(const std::string &line)

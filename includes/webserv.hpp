@@ -1,7 +1,7 @@
 #pragma once
-#ifdef __linux__
-	#include <stdint.h>
-#endif
+
+#include "utils.hpp"
+
 #include "Client.hpp"
 #include "Config.hpp"
 #include "ConfigGroup.hpp"
@@ -11,11 +11,22 @@
 #include "Server.hpp"
 #include "Socket.hpp"
 #include "Webserver.hpp"
-#include "utils.hpp"
-#include "webserv.hpp"
 
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <cstdlib>
+
+#ifdef __linux__
+	#include <stdint.h>
+#endif
+
+#include <sys/types.h>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <string>
 #include <vector>
+#include <map>
+#include <deque>
 #include <algorithm>

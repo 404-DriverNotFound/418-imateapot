@@ -1,6 +1,10 @@
 #include "Config.hpp"
 #include "ConfigGroup.hpp"
 
+/**
+ * Config::Config 
+ * @brief  Server Default Config에서 사용하는 생성자
+ */
 Config::Config():
 	port(80),
 	index("index.html"),
@@ -14,6 +18,12 @@ Config::Config():
 	method[2] = method[3] = method[4] = method[5] = false;
 }
 
+/**
+ * Config::Config 
+ * @brief  Location Config에서 사용하는 (복사)생성자
+ * @param  {Config} src           : 복사할 Server Default Config
+ * @param  {std::string} loc_path : Location 경로
+ */
 Config::Config(const Config &src, std::string &loc_path):
 	server_name(src.server_name),
 	root(src.root),
@@ -32,6 +42,12 @@ Config::Config(const Config &src, std::string &loc_path):
 		method[i] = src.method[i];
 }
 
+/**
+ * Config::parseConfig
+ * @brief  설정 파일의 한줄을 key, value로 쪼개진 vector로 받아와 이를 config 인스턴스에 적용하는 함수
+ * @param  {std::vector<std::string>} split : key, value로 쪼개진 설정값
+ * @param  {bool} is_location               : Location Config일 경우 true, Server 전체 Config일 경우 false
+ */
 void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 {
 	if (!split[0].compare("server_name"))

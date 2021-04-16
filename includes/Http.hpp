@@ -1,11 +1,5 @@
 #pragma once
-#ifdef __linux__
-	#include <stdint.h>
-#endif
-#include <string>
-#include <map>
-#include <deque>
-#include "Method.hpp"
+#include "webserv.hpp"
 
 struct StartLine
 {

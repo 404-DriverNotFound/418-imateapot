@@ -1,10 +1,14 @@
 #include "Webserver.hpp"
-
+/**
+ * Webserver 
+ * @brief  전체 웹서버 인스턴스를 만드는 생성자
+ * @param  {const std::string} path  : 설정 파일의 경로
+ * @param  {uint32_t} max_connection : 최대 접속 가능수
+ */
 Webserver::Webserver(const std::string &path, uint32_t max_connection) : _configs(ConfigGroup(path, max_connection))
 {
 	std::vector<u_int16_t> server_ports;
 
-	// server 만들어주기
 	for (int i = 0; i < this->_configs.getServerCnt(); i++)
 	{
 		this->_servers.push_back(Server(this->_configs.getConfig(i)));
@@ -21,6 +25,10 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 	}
 }
 
+/**
+ * Webserver::start_server 
+ * @brief  Webserver 내 Server를 바탕으로 서버를 시작하는 함수. 이 함수에서 프로젝트 유일하게 select가 작동됨.
+ */
 void Webserver::start_server()
 {
 	fd_set temp_fd_read;
@@ -47,6 +55,11 @@ void Webserver::start_server()
 	}
 }
 
+/**
+ * Webserver::accept_request
+ * @brief  select를 통해 들어온 특정 소켓의 데이터를 처리하는 함수
+ * @param  {Socket} sock : select를 통해 데이터가 들어온 것을 확인한 소켓
+ */
 void Webserver::accept_request(Socket &sock)
 {
 	

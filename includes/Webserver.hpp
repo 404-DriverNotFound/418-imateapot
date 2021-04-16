@@ -13,18 +13,12 @@ class Webserver
 		std::vector<Client>	_clients;
 
 	public:
-		Webserver(const std::string &, uint32_t max_connection); // config 파일의 경로를 받아서 초기화
-		void start_server();	 // 서버 시작
+		Webserver(const std::string &path, uint32_t max_connection);
+		void start_server();
 		void accept_request(Socket &sock);
-
 
 		class SelectException: public std::exception
 		{
 			virtual const char *what() const throw(); 
 		};
-
-
-
-	private:
-		//void create_server(const ConfigServer &);
 };

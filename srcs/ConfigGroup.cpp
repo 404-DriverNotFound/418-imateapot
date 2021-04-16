@@ -1,35 +1,4 @@
-#include "ConfigGroup.hpp"
-
-/**
- * ConfigGroup
- * config file 전체를 파싱하는 생성자
- * @param  {std::string} path        : config file 경로
- * @param  {uint32_t} max_connection : 서버에서 받을 수 있는 최대 연결 수 (기본값 20)
- */
-ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20): _max_connection(max_connection)
-{
-    std::ifstream config_file(path.c_str());
-
-    if (!config_file.is_open())
-        throw ConfigGroup::NoConfigFileException();
-
-	std::string line;
-    std::getline(config_file, line);
-
-    while (!config_file.eof())
-    {
-        if (isBlankLine(line))
-            continue;
-        if (line.compare("server"))
-            throw ConfigGroup::ConfigFormatException();
-        this->parseServer(config_file, line);
-    }
-	if (!checkDupServer())
-		throw ConfigGroup::ConfigFormatException();
-    config_file.close();
-}
-
-ConfigGroup::~ConfigGroup() {}
+#include "webserv.hpp"
 
 /**
  * parseServer
@@ -118,7 +87,39 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
     return (location_config);
 }
 
-/* --------- getter ---------*/
+/**
+ * ConfigGroup
+ * config file 전체를 파싱하는 생성자
+ * @param  {std::string} path        : config file 경로
+ * @param  {uint32_t} max_connection : 서버에서 받을 수 있는 최대 연결 수 (기본값 20)
+ */
+ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20): _max_connection(max_connection)
+{
+    std::ifstream config_file(path.c_str());
+
+    if (!config_file.is_open())
+        throw ConfigGroup::NoConfigFileException();
+
+	std::string line;
+    std::getline(config_file, line);
+
+    while (!config_file.eof())
+    {
+        if (isBlankLine(line))
+            continue;
+        if (line.compare("server"))
+            throw ConfigGroup::ConfigFormatException();
+        this->parseServer(config_file, line);
+    }
+	if (!checkDupServer())
+		throw ConfigGroup::ConfigFormatException();
+    config_file.close();
+}
+
+ConfigGroup::~ConfigGroup() {}
+
+/* --------- getter --------- */
+
 int ConfigGroup::getServerCnt()
 {
     return (_configs.size());
@@ -133,6 +134,8 @@ std::vector<Config> &ConfigGroup::getConfig(int index)
 {
     return (_configs[index]);
 }
+
+/* -------------------------- */
 
 /**
  * checkDupLocation

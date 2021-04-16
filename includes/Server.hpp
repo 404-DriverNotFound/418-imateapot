@@ -1,12 +1,5 @@
 #pragma once
-#ifdef __linux__
-	#include <stdint.h>
-#endif
-#include <string>
-#include <vector>
-#include <list>
-#include "Client.hpp"
-#include "Config.hpp"
+#include "webserv.hpp"
 
 class Server
 {

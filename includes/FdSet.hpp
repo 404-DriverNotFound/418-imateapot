@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __linux__
-	#include <stdint.h>
-#endif
-#include <sys/select.h>
-#include <iostream>
+#include "webserv.hpp"
 
 struct FdSet : public fd_set
 {

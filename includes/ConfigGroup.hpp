@@ -1,14 +1,5 @@
 #pragma once
-#ifdef __linux__
-	#include <stdint.h>
-#endif
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <exception>
-#include "Config.hpp"
-#include "utils.hpp"
+#include "webserv.hpp"
 
 class ConfigGroup
 {
