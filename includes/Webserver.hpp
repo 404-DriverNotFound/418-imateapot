@@ -1,5 +1,12 @@
 #pragma once
-#include "webserv.hpp"
+
+#include "ConfigGroup.hpp"
+#include "Server.hpp"
+#include "Socket.hpp"
+#include "Client.hpp"
+
+#include <vector>
+#include <string>
 
 class Webserver
 {

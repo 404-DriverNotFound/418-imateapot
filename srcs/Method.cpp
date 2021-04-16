@@ -1,4 +1,4 @@
-#include "Method.hpp"
+#include "webserv.hpp"
 
 /**
  * method명을 입력하면 일치하는 숫자 값을 반환한다.

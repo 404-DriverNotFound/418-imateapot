@@ -1,5 +1,4 @@
 #pragma once
-#include "webserv.hpp"
 
 struct FdSet : public fd_set
 {

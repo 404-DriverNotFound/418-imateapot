@@ -1,5 +1,12 @@
 #pragma once
-#include "webserv.hpp"
+
+#ifdef __linux__
+	#include <stdint.h>
+#endif
+#include <sstream>
+#include <string>
+#include <vector>
+#include <netinet/in.h>
 
 std::vector<std::string> ft_split(std::string str, char delim);
 

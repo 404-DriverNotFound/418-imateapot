@@ -1,5 +1,9 @@
 #pragma once
-#include "webserv.hpp"
+
+#include "Config.hpp"
+
+#include <vector>
+#include <string>
 
 class ConfigGroup
 {

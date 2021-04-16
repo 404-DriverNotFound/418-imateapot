@@ -1,5 +1,7 @@
 #pragma once
-#include "webserv.hpp"
+
+#include "Http.hpp"
+#include "Config.hpp"
 
 #define BUFFER_SIZE 16
 

@@ -1,5 +1,7 @@
 #pragma once
-#include "webserv.hpp"
+
+#include <string>
+#include <vector>
 
 struct Config
 {

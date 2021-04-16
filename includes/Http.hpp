@@ -1,5 +1,9 @@
 #pragma once
-#include "webserv.hpp"
+
+#include "Method.hpp"
+
+#include <map>
+#include <deque>
 
 struct StartLine
 {

@@ -3,6 +3,9 @@ SRC		=	Client.cpp \
 			ConfigGroup.cpp \
 			Http.cpp \
 			Method.cpp \
+			Webserver.cpp \
+			Server.cpp \
+			Socket.cpp \
 			utils.cpp \
 			webserv.cpp
 
@@ -15,7 +18,7 @@ INCDIR	= ./includes/
 NAME	= webserv
 
 CC		= clang++
-CCFLAG	= -std=c++98 -g -fsanitize=address#-Wall -Wextra -Werror
+CCFLAG	= -std=c++98 -g -fsanitize=address #-Wall -Wextra -Werror
 RM		= rm -f
 
 %.o:		%.cpp

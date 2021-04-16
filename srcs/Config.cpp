@@ -1,5 +1,4 @@
-#include "Config.hpp"
-#include "ConfigGroup.hpp"
+#include "webserv.hpp"
 
 /**
  * Config::Config 
