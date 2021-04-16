@@ -2,14 +2,28 @@
 #ifdef __linux__
 	#include <stdint.h>
 #endif
-#include <sys/socket.h>
+#include "webserv.hpp"
 
-class Socket : public sockaddr
+class Socket : public sockaddr_in
 {
-	int fd;
+	private:
+		uint16_t	_port;
+		int 		_fd;
 
-public:
-	void bind();
-	void accept();
-	void listen();
+	public:
+		Socket(uint16_t port);
+
+		// void bind();
+		void accept();
+		void listen();
+	
+		class SocketCreationException: public std::exception
+		{
+			virtual const char *what() const throw(); 
+		};
+
+		class BindException: public std::exception
+		{
+			virtual const char *what() const throw(); 
+		};
 };

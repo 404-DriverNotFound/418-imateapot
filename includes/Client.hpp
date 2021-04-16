@@ -23,7 +23,6 @@ enum e_status
 class Client
 {
 	private:
-		Socket			_sock;
 		std::string		_buffer;
 		e_status		_status;
 		HttpRequest		_request;
