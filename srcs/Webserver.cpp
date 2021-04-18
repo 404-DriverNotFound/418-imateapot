@@ -20,7 +20,7 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 	FT_FD_ZERO(&(this->_fd_read));
 	for (int i = 0; i < server_ports.size(); i++)
 	{
-		this->_socks.push_back(Socket(server_ports[i]));
+		this->_socks.push_back(Socket(server_ports[i], max_connection));
 		FT_FD_SET(this->_socks[i].getFd(),&(this->_fd_read));
 	}
 }
@@ -37,6 +37,9 @@ void Webserver::start_server()
 	while (1)
 	{
 		temp_fd_read = this->_fd_read;
+		/** 
+		* TODO: select의 max_fd 값은 고정인지 유동인지 
+		*/
 		state = select(FT_FD_SETSIZE + 1, &temp_fd_read, NULL, NULL, NULL);
 		
 		switch (state)

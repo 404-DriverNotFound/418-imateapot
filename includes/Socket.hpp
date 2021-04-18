@@ -1,19 +1,24 @@
 #pragma once
-#include "webserv.hpp"
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <fcntl.h>
+#include <exception>
 
-class Socket : public sockaddr_in
+class Socket
 {
 	private:
+		sockaddr_in _sockaddr;
 		uint16_t	_port;
 		int 		_fd;
 
 	public:
-		Socket(uint16_t port);
+		Socket(uint16_t port, uint32_t max_connection);
 
 		int getFd();
 		// void bind();
 		void accept();
-		void listen();
 
 		class SocketCreationException: public std::exception
 		{
@@ -21,6 +26,11 @@ class Socket : public sockaddr_in
 		};
 
 		class BindException: public std::exception
+		{
+			virtual const char *what() const throw(); 
+		};
+		
+		class ListenException: public std::exception
 		{
 			virtual const char *what() const throw(); 
 		};
