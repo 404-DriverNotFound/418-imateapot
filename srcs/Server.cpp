@@ -10,7 +10,7 @@ Server::Server(std::vector<Config> &config):
 	_server_name(config[0].server_name),
 	_port(config[0].port)
 {
-
+	(void)_config;
 }
 
 uint16_t Server::getPort()

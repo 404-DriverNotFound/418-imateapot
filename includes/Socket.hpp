@@ -1,10 +1,12 @@
 #pragma once
+
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/select.h>
 #include <fcntl.h>
 #include <exception>
+#include <cstring>
 
 class Socket
 {
@@ -17,8 +19,7 @@ class Socket
 		Socket(uint16_t port, uint32_t max_connection);
 
 		int getFd();
-		// void bind();
-		void accept();
+		int getPort();
 
 		class SocketCreationException: public std::exception
 		{

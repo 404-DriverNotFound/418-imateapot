@@ -5,7 +5,6 @@
 #include "Client.hpp"
 #include "Config.hpp"
 #include "ConfigGroup.hpp"
-#include "FdSet.hpp"
 #include "Http.hpp"
 #include "Method.hpp"
 #include "Server.hpp"

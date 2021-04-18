@@ -7,6 +7,9 @@
 
 #include <vector>
 #include <string>
+#include <unistd.h>
+
+#define READ_BUFFER 1024
 
 class Webserver
 {
@@ -21,10 +24,16 @@ class Webserver
 
 	public:
 		Webserver(const std::string &path, uint32_t max_connection);
-		void start_server();
-		void accept_request(Socket &sock);
+		void startServer();
+		void acceptRequest(Socket &sock);
+		bool readRequest(std::vector<Client>::iterator client_it);
 
 		class SelectException: public std::exception
+		{
+			virtual const char *what() const throw(); 
+		};
+
+		class SocketReadException: public std::exception
 		{
 			virtual const char *what() const throw(); 
 		};

@@ -1,4 +1,13 @@
-#include "webserv.hpp"
+#include "Client.hpp"
+
+Client::Client(Socket &socket): _port(socket.getPort()), _status(INITIALIZE)
+{
+	sockaddr	tmp;
+	socklen_t	socksize = sizeof(sockaddr_in);
+
+	if ((this->_fd = accept(socket.getFd(), &tmp, &socksize)) == -1)
+		throw Client::SocketAcceptException();
+}
 
 /**
  * Client::recvStartLine
@@ -38,6 +47,27 @@ void Client::recvStartLine(const std::string &line)
 	if (split[2].find("HTTP/") == std::string::npos) // if protocol is not HTTP
 		throw Client::RequestFormatException();
 	start_line.protocol = split[2];
+}
+
+void Client::appendBuffer(char *buff, int len)
+{
+	this->_buffer.append(buff, len);
+}
+
+void Client::parseBuffer()
+{
+	// TODO
+	std::cout << "buffer >>" << this->_buffer << "<<" << std::endl;
+}
+
+int Client::getFd()
+{
+	return this->_fd;
+}
+
+const char *Client::SocketAcceptException::what() const throw()
+{
+	return ("SocketAcceptException: accept error!");
 }
 
 const char *Client::RequestFormatException::what() const throw()

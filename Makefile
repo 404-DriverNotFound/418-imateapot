@@ -7,7 +7,7 @@ SRC		=	Client.cpp \
 			Server.cpp \
 			Socket.cpp \
 			utils.cpp \
-			webserv.cpp
+			main.cpp
 
 SRCDIR	= ./srcs/
 SRCS	= $(addprefix $(SRCDIR), $(SRC))
@@ -18,7 +18,7 @@ INCDIR	= ./includes/
 NAME	= webserv
 
 CC		= clang++
-CCFLAG	= -std=c++98 -g -fsanitize=address #-Wall -Wextra -Werror
+CCFLAG	= -std=c++98 -g -fsanitize=address -Wall -Wextra -Werror
 RM		= rm -f
 
 %.o:		%.cpp

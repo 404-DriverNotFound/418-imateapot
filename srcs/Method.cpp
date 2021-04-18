@@ -42,4 +42,5 @@ std::string numToMethod(const e_method num)
 		return "TRACE";
 	else if (num == DELETE)
 		return "DELETE";
+	return "ERROR";
 }

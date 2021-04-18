@@ -99,7 +99,7 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 		if (is_location)
 			for (int i = 0; i < 6; i++)
 				method[i] = false;
-		for (int i = 1; i < split.size(); i++)
+		for (size_t i = 1; i < split.size(); i++)
 		{
 			if (split[i].compare("GET"))
 				this->method[GET] = true;
