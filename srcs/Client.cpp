@@ -1,5 +1,10 @@
 #include "Client.hpp"
 
+/**
+ * Client::Client
+ * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
+ * @param  {Socket &socket} : class Socket
+ */
 Client::Client(Socket &socket): _port(socket.getPort()), _status(INITIALIZE)
 {
 	sockaddr	tmp;
@@ -18,7 +23,7 @@ void Client::recvStartLine(const std::string &line)
 {
 	// ! rescStartLine -> parseStartLine 으로 함수명 변경 제안합니다.
 	// ? this->_status = RECV_START_LINE; <- 넣을까 말까 하다가 뺐습니다.
-	/** 
+	/**
 	 * 이 함수는 수신이 완료되었다는 가정 하에 실행되므로 receive의 역할은
 	 * 하지 않는 것 같습니다. status 배정 부분은 수신단에 있는 게 맞는 것 같네요.
 	 * 그런 의미에서 함수명도 바꾸는 게 좋을 것 같습니다.
@@ -49,6 +54,11 @@ void Client::recvStartLine(const std::string &line)
 	start_line.protocol = split[2];
 }
 
+/**
+ * Client::recvHeader
+ * response header 파싱
+ * @param  {const std::string} line : header의 line
+ */
 void Client::recvHeader(const std::string &line)
 {
 	// TODO: \n 단위로 파싱을 해서 줄별로 넘겨받습니다.
@@ -60,7 +70,10 @@ void Client::appendBuffer(char *buff, int len)
 {
 	this->_buffer.append(buff, len);
 }
-
+/**
+ * parseBuffer
+ * buffer에 저장된 response를 각 부분(startline/header/body)에 맞게 함수 호출
+ */
 void Client::parseBuffer()
 {
 	size_t pos;
@@ -68,16 +81,16 @@ void Client::parseBuffer()
 	/**
 	 * TODO: recvBody 구현
 	 * 		 Transfer-encoding 에 따른 body parsing 어떻게 할지
-	 * ! 선팍! recvHeader 구현해야됨!!!! 
-	 * 
-	 */ 
+	 * ! 선팍! recvHeader 구현해야됨!!!!
+	 *
+	 */
 	if (this->_status == INITIALIZE)
 		this->_status = RECV_START_LINE;
 	while ((pos = this->_buffer.find('\n')) != std::string::npos)
 	{
 		std::string tmp = this->_buffer.substr(0, pos);
 		if (this->_status == RECV_START_LINE)
-		{	
+		{
 			recvStartLine(tmp);
 			this->_status = RECV_HEADER;
 		}
