@@ -35,7 +35,7 @@ class Client
 		Client(Socket &socket);
 
 		void recvStartLine(const std::string &);
-		void recvHeader();
+		void recvHeader(const std::string &);
 		void recvBody();
 		void procCgi();
 		void makeMsg();

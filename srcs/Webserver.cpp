@@ -38,6 +38,7 @@ void Webserver::startServer()
 	while (1)
 	{
 		memcpy(&temp_fd_read, &(this->_fd_read), sizeof(fd_set));
+		
 		/** 
 		* TODO: select의 max_fd 값은 고정인지 유동인지 
 		*/

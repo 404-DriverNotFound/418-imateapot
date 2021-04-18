@@ -1,21 +1,25 @@
-SRC		=	Client.cpp \
-			Config.cpp \
-			ConfigGroup.cpp \
-			Http.cpp \
-			Method.cpp \
-			Webserver.cpp \
-			Server.cpp \
-			Socket.cpp \
-			utils.cpp \
-			main.cpp
+NAME	= webserv
 
 SRCDIR	= ./srcs/
-SRCS	= $(addprefix $(SRCDIR), $(SRC))
-OBJS	= $(SRCS:.cpp=.o)
-
 INCDIR	= ./includes/
 
-NAME	= webserv
+# SRC		=	Client.cpp \
+# 			Config.cpp \
+# 			ConfigGroup.cpp \
+# 			Http.cpp \
+# 			Method.cpp \
+# 			Server.cpp \
+# 			Socket.cpp \
+# 			utils.cpp \
+# 			Webserver.cpp \
+# 			main.cpp
+
+# SRCS	= $(addprefix $(SRCDIR), $(SRC))
+SRCNAMES = $(shell ls $(SRCDIR) | grep -E ".+\.cpp")
+OBJS	= $(SRCS:.cpp=.o)
+
+BUILDDIR = ./build/
+BUILDOBJS = $(addprefix $(BUILDDIR), $(SRCNAMES:.cpp=.o))
 
 CC		= clang++
 CCFLAG	= -std=c++98 -g -fsanitize=address -Wall -Wextra -Werror
@@ -24,13 +28,21 @@ RM		= rm -f
 %.o:		%.cpp
 			$(CC) $(CCFLAG) -I$(INCDIR) -c $< -o $@
 
-$(NAME):	$(OBJS)
-			$(CC) $(CCFLAG) -I$(INCDIR) -o $(NAME) $(OBJS)
+all:		$(BUILDDIR) $(NAME)
 
-all:		$(NAME)
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
+
+$(BUILDDIR)%.o:$(SRCDIR)%.cpp
+	$(CC) $(CCFLAGS) -I$(INCDIR) -o $@ -c $<
+
+$(NAME):	$(BUILDOBJS)
+			$(CC) $(CCFLAG) -I$(INCDIR) -o $(NAME) $(BUILDOBJS)
+
 
 clean:
-			$(RM) $(OBJS)
+			$(RM) $(BUILDOBJS)
+			rm -rf $(BUILDDIR)
 
 fclean:		clean
 			$(RM) $(NAME)
