@@ -198,7 +198,7 @@ const char *ConfigGroup::ConfigFormatException::what() const throw()
  */
 bool isBlankLine(const std::string &line)
 {
-    for (int i = 0; i < line.size(); i++)
+    for (size_t i = 0; i < line.size(); i++)
     {
         if (line[i] != ' ' && line[i] != '\t')
             return false;

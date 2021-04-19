@@ -11,7 +11,7 @@
 std::vector<std::string> ft_split(std::string str, char delim);
 
 #ifndef FT_FD_SETSIZE
-#define FT_FD_SETSIZE 1024
+#define FT_FD_SETSIZE 256
 #endif
 
 #define FT_NBBY 8
