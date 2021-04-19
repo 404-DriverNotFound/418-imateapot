@@ -122,17 +122,17 @@ ConfigGroup::~ConfigGroup() {}
 
 int ConfigGroup::getServerCnt()
 {
-    return (_configs.size());
+    return (this->_configs.size());
 }
 
 uint32_t ConfigGroup::getMaxConnection()
 {
-    return (_max_connection);
+    return (this->_max_connection);
 }
 
 std::vector<Config> &ConfigGroup::getConfig(int index)
 {
-    return (_configs[index]);
+    return (this->_configs[index]);
 }
 
 /* -------------------------- */

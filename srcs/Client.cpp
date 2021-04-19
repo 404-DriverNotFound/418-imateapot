@@ -5,7 +5,7 @@
  * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
  * @param  {Socket &socket} : class Socket
  */
-Client::Client(Socket &socket): _port(socket.getPort()), _status(INITIALIZE)
+Client::Client(Socket &socket): _port(socket.getPort()), _status(INITIALIZE), _config_location(NULL)
 {
 	sockaddr	tmp;
 	socklen_t	socksize = sizeof(sockaddr_in);
@@ -61,15 +61,48 @@ void Client::recvStartLine(const std::string &line)
  */
 void Client::recvHeader(const std::string &line)
 {
-	// TODO: \n 단위로 파싱을 해서 줄별로 넘겨받습니다.
-	//       각 라인을 파싱해서 map에 넣어주시면 됩니다.
-	std::cout << "HEADER : " << line << std::endl;
+	// std::cout << "HEADER : " << line << std::endl;
+	std::vector<std::string> headers = ft_split(line, ':');
+	this->_request.insertToHeader(headers[0], line.substr(headers[0].size() + 1));
+}
+
+/**
+ * Client::setConfig
+ * @brief  RECV_HEADER가 끝난 이후, Host와 Port를 기반으로 올바른 Config 인스턴스 연결
+ * @param  {const ConfigGroup} group : Config 벡터를 가져올 ConfigGroup 인스턴스
+ */
+void Client::setConfig(ConfigGroup &group)
+{
+	std::string host = this->_request.getHeaderValue("Host");
+	if (host.size() == 0)
+		return;
+	host.erase(host.find(':'));
+	std::string path = this->_request.getStartLine().path;
+	int length = group.getServerCnt();
+	for (int i = 0; i < length; i++)
+	{
+		std::vector<Config> server_config = group.getConfig(i);
+		Config &defaultConfig = *(server_config.rbegin());
+		if (this->_port != defaultConfig.port || host.compare(defaultConfig.server_name))
+			continue;
+		this->_config_location = &*(server_config.rbegin());
+		for (int i = 0; i < server_config.size() - 1; i++)
+		{
+			std::string config_path = server_config[i].location_path;
+			if (!path.compare(path.size() - config_path.size(), config_path.size(), config_path))
+			{
+				this->_config_location = &(server_config[i]);
+				break;
+			}
+		}
+	}
 }
 
 void Client::appendBuffer(char *buff, int len)
 {
 	this->_buffer.append(buff, len);
 }
+
 /**
  * parseBuffer
  * buffer에 저장된 response를 각 부분(startline/header/body)에 맞게 함수 호출
@@ -81,14 +114,12 @@ void Client::parseBuffer()
 	/**
 	 * TODO: recvBody 구현
 	 * 		 Transfer-encoding 에 따른 body parsing 어떻게 할지
-	 * ! 선팍! recvHeader 구현해야됨!!!!
-	 *
 	 */
 	if (this->_status == INITIALIZE)
 		this->_status = RECV_START_LINE;
 	while ((pos = this->_buffer.find('\n')) != std::string::npos)
 	{
-		std::string tmp = this->_buffer.substr(0, pos);
+		std::string tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
 		if (this->_status == RECV_START_LINE)
 		{
 			recvStartLine(tmp);
@@ -105,10 +136,8 @@ void Client::parseBuffer()
 		{
 			// TODO: body 들어오는 경우 test 필요!!
 		}
-		this->_buffer.erase(0, tmp.length() + 1);
+		this->_buffer.erase(0, pos + 1);
 	}
-
-	std::cout << "buffer >>" << this->_buffer << "<<" << std::endl;
 }
 
 int Client::getFd()

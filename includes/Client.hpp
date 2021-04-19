@@ -36,6 +36,7 @@ class Client
 
 		void recvStartLine(const std::string &);
 		void recvHeader(const std::string &);
+		void setConfig(ConfigGroup &group);
 		void recvBody();
 		void procCgi();
 		void makeMsg();
