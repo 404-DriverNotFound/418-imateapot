@@ -22,11 +22,15 @@ class Webserver
 		std::vector<Socket>	_socks;
 		std::vector<Client>	_clients;
 
+		void acceptRequest(Socket &sock);
+		void readRequest(Client &client);
+		void handleResponse(Client &client);
+
+		void selectErrorHandling(std::vector<int>& err_index);
+
 	public:
 		Webserver(const std::string &path, uint32_t max_connection);
 		void startServer();
-		void acceptRequest(Socket &sock);
-		void readRequest(Client &client);
 
 		class SelectException: public std::exception
 		{

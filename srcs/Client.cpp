@@ -1,11 +1,51 @@
 #include "Client.hpp"
 
+bool Client::makeHeadMsg()
+{
+	/**
+	 * TODO: status code (404 등) 먼저
+	 */
+
+	/**
+	 * 404 아닐 경우
+	 * Content-Language: ko
+	 * Content-Location: <url>
+	 * Content-Length: <length>
+	 * Content-Type: text/plain
+	 * TODO: Transfer-Encoding: chunked (나중에)
+	 * TODO: retry-after를 exception 발생했을 시
+	 * Last-Modified: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+	 */
+	return true;
+}
+
+void Client::makeGetMsg()
+{
+	if (!this->makeHeadMsg())
+		return ;
+	// TODO: body를 encoding 없이 raw로 push해주기
+}
+
+void Client::makePutMsg()
+{
+	// TODO: 보류
+}
+
+void Client::makePostMsg()
+{
+	// TODO: 보류
+}
+
 /**
  * Client::Client
  * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
  * @param  {Socket &socket} : class Socket
  */
-Client::Client(Socket &socket): _port(socket.getPort()), _status(INITIALIZE), _config_location(NULL)
+Client::Client(Socket &socket):
+	_port(socket.getPort()),
+	_sock_status(INITIALIZE),
+	_proc_status(PROC_INITIALIZE),
+	_config_location(NULL)
 {
 	sockaddr	tmp;
 	socklen_t	socksize = sizeof(sockaddr_in);
@@ -92,41 +132,76 @@ void Client::setConfig(ConfigGroup &group)
 	}
 }
 
-void Client::appendBuffer(char *buff, int len)
+/**
+ * Client::makeMsg
+ * 
+ */
+void Client::makeMsg()
 {
-	this->_buffer.append(buff, len);
+	StartLineRes &res_start_line = this->_response.getStartLine();
+	StartLineReq &req_start_line = this->_request.getStartLine();
+
+	res_start_line.protocol = "HTTP/1.1";
+	this->_response.insertToHeader("Server", "418-IAmATeapot");
+	/**
+	 * TODO: Date, Allow insert 구현
+	 * Date: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+	 * Allow: <http-methods>
+	 */
+	switch (req_start_line.method)
+	{
+	case GET:
+		break ;
+
+	case HEAD:
+		this->makeHeadMsg();
+		break ;
+
+	case PUT:
+		break ;
+
+	case POST:
+		break ;
+
+	default:
+		break ;
+	}
 }
 
 /**
  * parseBuffer
  * buffer에 저장된 response를 각 부분(startline/header/body)에 맞게 함수 호출
  */
-void Client::parseBuffer()
+void Client::parseBuffer(char *buff, int len)
 {
 	size_t pos;
 
+	this->_buffer.append(buff, len);
 	/**
 	 * TODO: recvBody 구현
 	 * 		 Transfer-encoding 에 따른 body parsing 어떻게 할지
 	 */
-	if (this->_status == INITIALIZE)
-		this->_status = RECV_START_LINE;
+	if (this->_sock_status == INITIALIZE)
+		this->_sock_status = RECV_START_LINE;
 	while ((pos = this->_buffer.find('\n')) != std::string::npos)
 	{
 		std::string tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
-		if (this->_status == RECV_START_LINE)
+		if (this->_sock_status == RECV_START_LINE)
 		{
 			this->parseStartLine(tmp);
-			this->_status = RECV_HEADER;
+			this->_sock_status = RECV_HEADER;
 		}
-		else if (this->_status == RECV_HEADER)
+		else if (this->_sock_status == RECV_HEADER)
 		{
 			if (tmp.size() == 0)
-				this->_status = RECV_BODY;
+			{
+				this->_sock_status = RECV_BODY;
+				this->_proc_status = CREATING;
+			}
 			else
 				this->parseHeader(tmp);
 		}
-		else if (this->_status == RECV_BODY)
+		else if (this->_sock_status == RECV_BODY)
 		{
 			// TODO: body 들어오는 경우 test 필요!!
 		}
@@ -137,6 +212,11 @@ void Client::parseBuffer()
 int Client::getFd()
 {
 	return this->_fd;
+}
+
+e_proc_status Client::getProcStatus()
+{
+	return this->_proc_status;
 }
 
 const char *Client::SocketAcceptException::what() const throw()

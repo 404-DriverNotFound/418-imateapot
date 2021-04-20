@@ -6,8 +6,8 @@
 
 enum e_method
 {
-	GET,
 	HEAD,
+	GET,
 	PUT,
 	POST
 };

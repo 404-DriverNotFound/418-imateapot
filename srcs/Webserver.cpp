@@ -32,17 +32,18 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
  */
 void Webserver::startServer()
 {
-	fd_set temp_fd_read;
+	fd_set temp_fd_read, temp_fd_write;
 	int state;
 
 	while (1)
 	{
 		memcpy(&temp_fd_read, &(this->_fd_read), sizeof(fd_set));
+		memcpy(&temp_fd_write, &(this->_fd_write), sizeof(fd_set));
 		
 		/** 
 		* TODO: select의 max_fd 값은 고정인지 유동인지 
 		*/
-		state = select(FT_FD_SETSIZE, &temp_fd_read, NULL, NULL, NULL);
+		state = select(FT_FD_SETSIZE, &temp_fd_read, &temp_fd_write, NULL, NULL);
 		switch (state)
 		{
 		case -1:
@@ -61,11 +62,12 @@ void Webserver::startServer()
 			std::vector<int> err_index;
 			for (int i = 0; i < this->_clients.size(); i++)
 			{
+				// TODO: client 상태에 따라 read하지 않고 continue;
 				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_read)))
 				{
 					try
 					{
-						readRequest(this->_clients[i]);
+						this->readRequest(this->_clients[i]);
 					}
 					catch(const std::exception& e)
 					{
@@ -74,8 +76,26 @@ void Webserver::startServer()
 					}
 				}
 			}
-			for (int i = err_index.size() - 1; i >= 0; i--)
-				this->_clients.erase(this->_clients.begin() + err_index[i]);
+			this->selectErrorHandling(err_index);
+			
+			for (int i = 0; i < this->_clients.size(); i++)
+			{
+				if (this->_clients[i].getProcStatus() == PROC_INITIALIZE)
+					continue ;
+				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_write)))
+				{
+					try
+					{
+						this->handleResponse(this->_clients[i]);
+					}
+					catch(const std::exception& e)
+					{
+						std::cerr << e.what() << '\n';
+						err_index.push_back(i);
+					}
+				}
+			}
+			this->selectErrorHandling(err_index);
 		}
 	}
 }
@@ -92,20 +112,37 @@ void Webserver::readRequest(Client &client)
 
 	len = read(client.getFd(), buff, READ_BUFFER);
 	if (len < 0)
-	{
-		close(client.getFd());
-		FT_FD_CLR(client.getFd(), &(this->_fd_read));
-		FT_FD_CLR(client.getFd(), &(this->_fd_write));
 		throw Webserver::SocketReadException();
-	}
 	if (len == 0)
 	{
 		// TODO: 정상 종료되었을때 response 보내고 close하기!!
 		std::cout << "END!!!!!\n";
 		return ;
 	}
-	client.appendBuffer(buff, len);
-	client.parseBuffer();
+	client.parseBuffer(buff, len);
+}
+
+void Webserver::handleResponse(Client &client)
+{
+	if (client.getProcStatus() == CREATING)
+		client.makeMsg();
+		// create
+	else if (client.getProcStatus() == SENDING)
+		;
+		// write
+}
+
+void Webserver::selectErrorHandling(std::vector<int>& err_index)
+{
+	for (int i = err_index.size() - 1; i >= 0; i--)
+	{
+		std::vector<Client>::iterator client = this->_clients.begin() + err_index[i];
+		close(client->getFd());
+		FT_FD_CLR(client->getFd(), &(this->_fd_read));
+		FT_FD_CLR(client->getFd(), &(this->_fd_write));
+		this->_clients.erase(client);
+	}
+	err_index.clear();
 }
 
 const char *Webserver::SelectException::what() const throw()

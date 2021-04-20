@@ -62,3 +62,10 @@ void ft_trim(std::string &str, const std::string cut)
 		str.clear();
 }
 
+// TODO: File의 timestamp(fstat)와 current time을 가져오는 함수 각각 구현하기
+// Date: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+// Last-Modified: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+std::string getCurrentTime()
+{
+	return "";
+}
