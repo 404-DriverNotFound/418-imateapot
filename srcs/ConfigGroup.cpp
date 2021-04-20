@@ -189,19 +189,3 @@ const char *ConfigGroup::ConfigFormatException::what() const throw()
 {
     return ("ConfigFormatException: Invalid format!");
 }
-
-/**
- * isBlankLine
- * 가져온 문자열에 공백이나 탭으로만 이루어져있는지 확인하는 함수
- * @param  {std::string} line : 확인할 문자열
- * @return {bool}             : 공백이나 탭으로만 이루어져있으면 참
- */
-bool isBlankLine(const std::string &line)
-{
-    for (size_t i = 0; i < line.size(); i++)
-    {
-        if (line[i] != ' ' && line[i] != '\t')
-            return false;
-    }
-    return true;
-}

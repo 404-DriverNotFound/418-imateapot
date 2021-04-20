@@ -15,19 +15,12 @@ Client::Client(Socket &socket): _port(socket.getPort()), _status(INITIALIZE), _c
 }
 
 /**
- * Client::recvStartLine
+ * Client::parseStartLine
  * @brief  request의 start line을 파싱하여 Client의 멤버 변수에 저장한다.
  * @param  {std::string} line : request의 start line
  */
-void Client::recvStartLine(const std::string &line)
+void Client::parseStartLine(const std::string &line)
 {
-	// ! rescStartLine -> parseStartLine 으로 함수명 변경 제안합니다.
-	// ? this->_status = RECV_START_LINE; <- 넣을까 말까 하다가 뺐습니다.
-	/**
-	 * 이 함수는 수신이 완료되었다는 가정 하에 실행되므로 receive의 역할은
-	 * 하지 않는 것 같습니다. status 배정 부분은 수신단에 있는 게 맞는 것 같네요.
-	 * 그런 의미에서 함수명도 바꾸는 게 좋을 것 같습니다.
-	 */
 	StartLineReq &start_line = this->_request.getStartLine();
 
 	std::vector<std::string> split = ft_split(line, ' '); // method, path, protocol
@@ -55,15 +48,16 @@ void Client::recvStartLine(const std::string &line)
 }
 
 /**
- * Client::recvHeader
+ * Client::parseHeader
  * response header 파싱
  * @param  {const std::string} line : header의 line
  */
-void Client::recvHeader(const std::string &line)
+void Client::parseHeader(const std::string &line)
 {
-	// std::cout << "HEADER : " << line << std::endl;
 	std::vector<std::string> headers = ft_split(line, ':');
-	this->_request.insertToHeader(headers[0], line.substr(headers[0].size() + 1));
+	std::string value = line.substr(headers[0].size() + 1);
+	ft_trim(value, " \t");
+	this->_request.insertToHeader(headers[0], value);
 }
 
 /**
@@ -81,7 +75,7 @@ void Client::setConfig(ConfigGroup &group)
 	int length = group.getServerCnt();
 	for (int i = 0; i < length; i++)
 	{
-		std::vector<Config> server_config = group.getConfig(i);
+		std::vector<Config> &server_config = group.getConfig(i);
 		Config &defaultConfig = *(server_config.rbegin());
 		if (this->_port != defaultConfig.port || host.compare(defaultConfig.server_name))
 			continue;
@@ -122,7 +116,7 @@ void Client::parseBuffer()
 		std::string tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
 		if (this->_status == RECV_START_LINE)
 		{
-			recvStartLine(tmp);
+			this->parseStartLine(tmp);
 			this->_status = RECV_HEADER;
 		}
 		else if (this->_status == RECV_HEADER)
@@ -130,7 +124,7 @@ void Client::parseBuffer()
 			if (tmp.size() == 0)
 				this->_status = RECV_BODY;
 			else
-				recvHeader(tmp);
+				this->parseHeader(tmp);
 		}
 		else if (this->_status == RECV_BODY)
 		{
