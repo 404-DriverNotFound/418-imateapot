@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Method.hpp"
+#include "ConfigGroup.hpp"
 
 #include <map>
 #include <deque>
@@ -29,6 +30,7 @@ class Http
 
 	public:
 		void insertToHeader(const std::string &, const std::string &);
+		std::string getHeaderValue(const std::string &);
 };
 
 class HttpRequest : public Http

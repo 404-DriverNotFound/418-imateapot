@@ -34,8 +34,9 @@ class Client
 	public:
 		Client(Socket &socket);
 
-		void recvStartLine(const std::string &);
-		void recvHeader(const std::string &);
+		void parseStartLine(const std::string &);
+		void parseHeader(const std::string &);
+		void setConfig(ConfigGroup &group);
 		void recvBody();
 		void procCgi();
 		void makeMsg();

@@ -9,6 +9,9 @@
 #include <netinet/in.h>
 
 std::vector<std::string> ft_split(std::string str, char delim);
+bool isBlankLine(const std::string &line);
+void ft_trim(std::string &str, const std::string cut);
+
 
 #ifndef FT_FD_SETSIZE
 #define FT_FD_SETSIZE 256
