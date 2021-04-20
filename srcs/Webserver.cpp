@@ -58,27 +58,24 @@ void Webserver::startServer()
 					FT_FD_SET(created.getFd(), &(this->_fd_read));
 					FT_FD_SET(created.getFd(), &(this->_fd_write));
 				}
-			bool is_connection_finish = true;
-			while (is_connection_finish)
+			std::vector<int> err_index;
+			for (int i = 0; i < this->_clients.size(); i++)
 			{
-				is_connection_finish = false;
-				std::vector<Client>::iterator ite = this->_clients.end();
-				for (std::vector<Client>::iterator it = this->_clients.begin(); it < ite; it++)
-					if (FT_FD_ISSET(it->getFd(), &(temp_fd_read)))
+				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_read)))
+				{
+					try
 					{
-						try
-						{
-							is_connection_finish |= readRequest(it);
-							if (is_connection_finish)
-								break;
-						}
-						catch(const std::exception& e)
-						{
-							std::cerr << e.what() << '\n';
-						}
+						readRequest(this->_clients[i]);
+					}
+					catch(const std::exception& e)
+					{
+						std::cerr << e.what() << '\n';
+						err_index.push_back(i);
 					}
 				}
-			
+			}
+			for (int i = err_index.size() - 1; i >= 0; i--)
+				this->_clients.erase(this->_clients.begin() + err_index[i]);
 		}
 	}
 }
@@ -88,26 +85,27 @@ void Webserver::startServer()
  * @brief  select를 통해 들어온 특정 소켓의 데이터를 처리하는 함수
  * @param  {Socket} sock : select를 통해 데이터가 들어온 것을 확인한 소켓
  */
-bool Webserver::readRequest(std::vector<Client>::iterator client_it)
+void Webserver::readRequest(Client &client)
 {
 	char	buff[READ_BUFFER];
 	int		len;
 
-	len = read(client_it->getFd(), buff, READ_BUFFER);
-	if (len <= 0)
+	len = read(client.getFd(), buff, READ_BUFFER);
+	if (len < 0)
 	{
-		close(client_it->getFd());
-		FT_FD_CLR(client_it->getFd(), &(this->_fd_read));
-		FT_FD_CLR(client_it->getFd(), &(this->_fd_write));
-		this->_clients.erase(client_it);
-		if (len < 0)
-			throw Webserver::SocketReadException();
-		std::cout << "END!!!!!\n";
-		return true;
+		close(client.getFd());
+		FT_FD_CLR(client.getFd(), &(this->_fd_read));
+		FT_FD_CLR(client.getFd(), &(this->_fd_write));
+		throw Webserver::SocketReadException();
 	}
-	client_it->appendBuffer(buff, len);
-	client_it->parseBuffer();
-	return false;
+	if (len == 0)
+	{
+		// TODO: 정상 종료되었을때 response 보내고 close하기!!
+		std::cout << "END!!!!!\n";
+		return ;
+	}
+	client.appendBuffer(buff, len);
+	client.parseBuffer();
 }
 
 const char *Webserver::SelectException::what() const throw()

@@ -26,7 +26,7 @@ class Webserver
 		Webserver(const std::string &path, uint32_t max_connection);
 		void startServer();
 		void acceptRequest(Socket &sock);
-		bool readRequest(std::vector<Client>::iterator client_it);
+		void readRequest(Client &client);
 
 		class SelectException: public std::exception
 		{

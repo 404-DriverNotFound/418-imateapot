@@ -15,10 +15,6 @@ int methodToNum(const std::string &name)
 		return PUT;
 	else if (!name.compare("POST"))
 		return POST;
-	else if (!name.compare("TRACE"))
-		return TRACE;
-	else if (!name.compare("DELETE"))
-		return DELETE;
 	else
 		return ERROR;
 }
@@ -38,9 +34,5 @@ std::string numToMethod(const e_method num)
 		return "PUT";
 	else if (num == POST)
 		return "POST";
-	else if (num == TRACE)
-		return "TRACE";
-	else if (num == DELETE)
-		return "DELETE";
 	return "ERROR";
 }
