@@ -1,4 +1,4 @@
-#include "webserv.hpp"
+#include "Http.hpp"
 
 /**
  * std::pair(key, value)를 만들어 http 헤더(multimap)에 insert해주는 함수.
@@ -8,7 +8,21 @@
  */
 void Http::insertToHeader(const std::string &key, const std::string &value)
 {
-	_headers.insert(std::make_pair(key, value));
+	this->_headers.insert(std::make_pair(key, value));
+}
+
+/**
+ * Http::getHeaderValue
+ * 매개변수로 넣은 키값을 바탕으로 value를 반환해주는 함수
+ * @param  {const std::string} key : 찾을 헤더의 key값
+ * @return {std::string}           : 헤더가 있으면 value값, 없으면 빈 문자열 ("")
+ */
+std::string Http::getHeaderValue(const std::string &key)
+{
+	std::multimap<std::string, std::string>::iterator result = this->_headers.find(key);
+	if (result == this->_headers.end())
+		return "";
+	return (*result).second;
 }
 
 /**

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "utils.hpp"
 
 #include <vector>
 #include <string>
@@ -35,5 +36,3 @@ class ConfigGroup
 			virtual const char *what() const throw();
 		};
 };
-
-bool isBlankLine(const std::string &line);

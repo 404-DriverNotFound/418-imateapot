@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 #include <iostream>
 
-enum e_status
+enum e_sock_status
 {
 	INITIALIZE,
 	RECV_START_LINE,
@@ -20,31 +20,47 @@ enum e_status
 	SEND_DONE
 };
 
+enum e_proc_status
+{
+	PROC_INITIALIZE,
+	CREATING,
+	SENDING
+};
+
 class Client
 {
 	private:
 		int				_fd;
 		uint16_t		_port;
 		std::string		_buffer;
-		e_status		_status;
+		e_sock_status	_sock_status;
+		e_proc_status	_proc_status;
 		HttpRequest		_request;
 		HttpResponse	_response;
 		Config			*_config_location;
 
+		bool makeHeadMsg();
+		void makeGetMsg();
+		void makePutMsg();
+		void makePostMsg();
+
+		void procCgi();
+
 	public:
 		Client(Socket &socket);
 
-		void recvStartLine(const std::string &);
-		void recvHeader(const std::string &);
-		void recvBody();
-		void procCgi();
+		void parseStartLine(const std::string &);
+		void parseHeader(const std::string &);
+		void setConfig(ConfigGroup &group);
+		void parseBody();
+
 		void makeMsg();
 		void sendMsg();
 
-		void appendBuffer(char *buff, int len);
-		void parseBuffer();
+		void parseBuffer(char *buff, int len);
 
-		int getFd();
+		int				getFd();
+		e_proc_status	getProcStatus();
 
 		class SocketAcceptException: public std::exception
 		{

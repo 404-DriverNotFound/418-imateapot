@@ -6,12 +6,10 @@
 
 enum e_method
 {
-	GET,
 	HEAD,
+	GET,
 	PUT,
-	POST,
-	TRACE,
-	DELETE,
+	POST
 };
 
 int methodToNum(const std::string &);
