@@ -63,11 +63,11 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("index"))
 	{
-		this->index = split[1];
+		this->index = this->root + "/" + split[1];
 	}
 	else if (!split[0].compare("error_page"))
 	{
-		this->error_page = split[1];
+		this->error_page = this->root + "/" + split[1];
 	}
 	else if (!split[0].compare("head_length"))
 	{
@@ -79,9 +79,9 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("autoindex"))
 	{
-		if (split[1].compare("on"))
+		if (!split[1].compare("on"))
 			this->autoindex = true;
-		else if (split[1].compare("off"))
+		else if (!split[1].compare("off"))
 			this->autoindex = false;
 		else
 			throw ConfigGroup::ConfigFormatException();

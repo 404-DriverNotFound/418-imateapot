@@ -20,11 +20,12 @@ struct StartLineReq : public StartLine
 
 struct StartLineRes : public StartLine
 {
-	uint8_t		status_code;
+	uint16_t		status_code;
 };
 
 class Http
 {
+	// TODO: map으로 바꾸기
 	std::multimap<std::string, std::string>	_headers;
 	std::deque<uint8_t>						_body;
 

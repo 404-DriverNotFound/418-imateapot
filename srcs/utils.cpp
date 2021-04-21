@@ -62,10 +62,19 @@ void ft_trim(std::string &str, const std::string cut)
 		str.clear();
 }
 
-// TODO: File의 timestamp(fstat)와 current time을 가져오는 함수 각각 구현하기
-// Date: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
-// Last-Modified: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+std::string getHTTPTimeFormat(time_t time)
+{
+	char s[150];
+    struct tm *tm_time = std::gmtime(&time);
+    // ? gmtime 사용해도 될까요?
+
+	strftime(s, sizeof(s), "%a, %d %b %Y %T GMT", tm_time);
+    return (s);
+}
+
 std::string getCurrentTime()
 {
-	return "";
+    struct timeval time;
+    gettimeofday(&time, NULL);
+	return getHTTPTimeFormat(time.tv_sec);
 }

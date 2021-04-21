@@ -1,28 +1,151 @@
 #include "Client.hpp"
 
-bool Client::makeHeadMsg()
+/**
+ * Client::makeFilePath
+ * HTTP request로 얻은 path에 해당하는 file path를 구성.
+ */
+void Client::makeFilePath()
 {
-	/**
-	 * TODO: status code (404 등) 먼저
-	 */
+	std::string &path = this->_request.getStartLine().path;
+	Config &config = *this->_config_location;
+
+	this->_file_path.clear();
+	this->_file_path = config.root;
+
+	if (!config.location_path.empty())
+	{
+		std::string dir_path = path.substr(config.location_path.length());
+		this->_file_path.append(dir_path);
+	}
+	else
+		this->_file_path.append(path);
 
 	/**
-	 * 404 아닐 경우
-	 * Content-Language: ko
-	 * Content-Location: <url>
-	 * Content-Length: <length>
-	 * Content-Type: text/plain
-	 * TODO: Transfer-Encoding: chunked (나중에)
-	 * TODO: retry-after를 exception 발생했을 시
-	 * Last-Modified: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+	 * std::cout << "path: " << this->_file_path << std::endl;
+	 * 일단 테스트용으로 남겨둬봅니다.
+	*/
+}
+
+/**
+ * Client::checkFilePath
+ * makeFilePath에서 구성한 file path가 유효한지 검사한 후 status code 부여.
+ */
+void Client::checkFilePath()
+{
+	Config &config = *this->_config_location;
+	struct stat	path_stat;
+
+	if (stat(this->_file_path.c_str(), &path_stat)) // if stat() failed
+	{
+		this->makeStatus(ERROR);
+		return ;
+	}
+
+	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
+	{
+		this->makeStatus(200);
+		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtim.tv_sec);
+		std::cout << last_modified << std::endl;
+		this->_response.insertToHeader("Last-modified", last_modified);
+		return ;
+	}
+	// if _file_path is a dir
+	std::string root = config.root + "/";
+	if (this->_file_path == root) // if in root
+	{
+		if (config.index.find(config.root) == std::string::npos)
+		{
+			if (config.autoindex)
+				this->makeStatus(200);
+			else
+				this->makeStatus(404);
+		}
+		else
+		{
+			this->_file_path = config.index;
+			this->makeStatus(200);
+		}
+	}
+	else // if not in root directory
+		this->makeStatus(404);
+}
+
+/**
+ * Client::makeStatus
+ * response에 status code를 부여.
+ * @param  {int} status : 부여하고자 하는 status code.
+ */
+void Client::makeStatus(int status)
+{
+	StartLineRes &start_line = this->_response.getStartLine();
+	Config &config = *this->_config_location;
+
+	if (status == ERROR)
+		start_line.status_code = 404;
+		// TODO: 자세한 에러 처리 여부에 대한 논의 필요 (한다면 errno에 따라서 처리)
+	else
+		start_line.status_code = (uint16_t)status;
+
+	if (start_line.status_code >= 400)
+		_file_path = config.error_page;
+}
+
+/**
+ * Client::makeContentLocation 
+ * file_path로부터 Content-Location을 구성.
+ * @return {std::string}  : 만들어진 content-location
+ */
+std::string Client::makeContentLocation()
+{
+	StartLineRes &start_line = this->_response.getStartLine();
+	Config &config = *this->_config_location;
+	std::string host = this->_request.getHeaderValue("Host");
+
+	std::string content_location = this->_file_path;
+
+	if (content_location.find(config.root) != std::string::npos)
+	{
+		content_location.erase(0, config.root.length());
+		if (!config.location_path.empty())
+			content_location.insert(0, config.location_path);
+	}
+	else
+		content_location.erase(0, config.server_root.length());
+	return (content_location);
+}
+
+/**
+ * Client::makeHeadMsg
+ * HEAD 메소드로 들어온 HTTP request에 대한 response 메시지를 구성.
+ */
+void Client::makeHeadMsg()
+{
+	StartLineRes &start_line = this->_response.getStartLine();
+	Config &config = *this->_config_location;
+
+	this->makeFilePath();
+	this->checkFilePath();
+	std::string content_location = this->makeContentLocation();
+	/**
+	std::cout << "code: " << (unsigned int)start_line.status_code << std::endl;
+	std::cout << "path: " << this->_file_path << std::endl;
+	std::cout << "contentLocation: " << content_location << std::endl;
+	exit(1);
+	 * 일단 테스트용으로 남겨둬봅니다.
 	 */
-	return true;
+
+	this->_response.insertToHeader("Content-Language", "ko");
+	this->_response.insertToHeader("Content-Location", content_location);
+	this->_response.insertToHeader("Content-Type", "text/plain");
+	this->_response.insertToHeader("Transfer-Encoding", "chunked");
+	/**
+	 * TODO: retry-after를 exception 발생했을 시
+	 */
 }
 
 void Client::makeGetMsg()
 {
-	if (!this->makeHeadMsg())
-		return ;
+	this->makeHeadMsg();
 	// TODO: body를 encoding 없이 raw로 push해주기
 }
 
@@ -45,6 +168,7 @@ Client::Client(Socket &socket):
 	_port(socket.getPort()),
 	_sock_status(INITIALIZE),
 	_proc_status(PROC_INITIALIZE),
+	_file_path(),
 	_config_location(NULL)
 {
 	sockaddr	tmp;
@@ -89,7 +213,7 @@ void Client::parseStartLine(const std::string &line)
 
 /**
  * Client::parseHeader
- * response header 파싱
+ * request header 파싱
  * @param  {const std::string} line : header의 line
  */
 void Client::parseHeader(const std::string &line)
@@ -110,7 +234,8 @@ void Client::setConfig(ConfigGroup &group)
 	std::string host = this->_request.getHeaderValue("Host");
 	if (host.size() == 0)
 		return;
-	host.erase(host.find(':'));
+	if (host.find(':') != std::string::npos)
+		host.erase(host.find(':'));
 	std::string path = this->_request.getStartLine().path;
 	int length = group.getServerCnt();
 	for (int i = 0; i < length; i++)
@@ -123,12 +248,13 @@ void Client::setConfig(ConfigGroup &group)
 		for (int i = 0; i < server_config.size() - 1; i++)
 		{
 			std::string config_path = server_config[i].location_path;
-			if (!path.compare(path.size() - config_path.size(), config_path.size(), config_path))
+			if (!path.compare(0, config_path.size(), config_path))
 			{
 				this->_config_location = &(server_config[i]);
-				break;
+				return;
 			}
 		}
+		return;
 	}
 }
 
@@ -143,10 +269,11 @@ void Client::makeMsg()
 
 	res_start_line.protocol = "HTTP/1.1";
 	this->_response.insertToHeader("Server", "418-IAmATeapot");
+	this->_response.insertToHeader("Date", getCurrentTime());
+	this->_response.insertToHeader("Allow", makeMethodList(this->_config_location->method));
 	/**
-	 * TODO: Date, Allow insert 구현
-	 * Date: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
-	 * Allow: <http-methods>
+	 * TODO: config에 없는 method가 들어왔을 때에 대한 response 처리
+	 * (405 Method Not Allowed)
 	 */
 	switch (req_start_line.method)
 	{

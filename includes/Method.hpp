@@ -14,3 +14,4 @@ enum e_method
 
 int methodToNum(const std::string &);
 std::string numToMethod(const e_method);
+std::string makeMethodList(bool *methods);

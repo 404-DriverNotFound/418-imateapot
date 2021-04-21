@@ -6,6 +6,9 @@
 #include "Socket.hpp"
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <iostream>
 
 enum e_sock_status
@@ -37,9 +40,15 @@ class Client
 		e_proc_status	_proc_status;
 		HttpRequest		_request;
 		HttpResponse	_response;
+		std::string		_file_path;
 		Config			*_config_location;
 
-		bool makeHeadMsg();
+		void makeFilePath();
+		void checkFilePath();
+		void makeStatus(int status);
+		std::string makeContentLocation();
+
+		void makeHeadMsg();
 		void makeGetMsg();
 		void makePutMsg();
 		void makePostMsg();

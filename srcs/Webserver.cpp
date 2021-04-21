@@ -125,7 +125,10 @@ void Webserver::readRequest(Client &client)
 void Webserver::handleResponse(Client &client)
 {
 	if (client.getProcStatus() == CREATING)
+	{
+		client.setConfig(_configs);
 		client.makeMsg();
+	}
 		// create
 	else if (client.getProcStatus() == SENDING)
 		;
