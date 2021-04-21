@@ -1,6 +1,6 @@
 #include "webserv.hpp"
 /**
- * Webserver 
+ * Webserver
  * @brief  전체 웹서버 인스턴스를 만드는 생성자
  * @param  {const std::string} path  : 설정 파일의 경로
  * @param  {uint32_t} max_connection : 최대 접속 가능수
@@ -16,7 +16,7 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 		if (std::find(server_ports.begin(), server_ports.end(), port) == server_ports.end())
 			server_ports.push_back(port);
 	}
-	
+
 	FT_FD_ZERO(&(this->_fd_read));
 	FT_FD_ZERO(&(this->_fd_write));
 	for (size_t i = 0; i < server_ports.size(); i++)
@@ -27,7 +27,7 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 }
 
 /**
- * Webserver::startServer 
+ * Webserver::startServer
  * @brief  Webserver 내 Server를 바탕으로 서버를 시작하는 함수. 이 함수에서 프로젝트 유일하게 select가 작동됨.
  */
 void Webserver::startServer()
@@ -39,9 +39,9 @@ void Webserver::startServer()
 	{
 		memcpy(&temp_fd_read, &(this->_fd_read), sizeof(fd_set));
 		memcpy(&temp_fd_write, &(this->_fd_write), sizeof(fd_set));
-		
-		/** 
-		* TODO: select의 max_fd 값은 고정인지 유동인지 
+
+		/**
+		* TODO: select의 max_fd 값은 고정인지 유동인지
 		*/
 		state = select(FT_FD_SETSIZE, &temp_fd_read, &temp_fd_write, NULL, NULL);
 		switch (state)
@@ -77,7 +77,7 @@ void Webserver::startServer()
 				}
 			}
 			this->selectErrorHandling(err_index);
-			
+
 			for (int i = 0; i < this->_clients.size(); i++)
 			{
 				if (this->_clients[i].getProcStatus() == PROC_INITIALIZE)
@@ -125,7 +125,10 @@ void Webserver::readRequest(Client &client)
 void Webserver::handleResponse(Client &client)
 {
 	if (client.getProcStatus() == CREATING)
+	{
+		client.setConfig(_configs);
 		client.makeMsg();
+	}
 		// create
 	else if (client.getProcStatus() == SENDING)
 		;

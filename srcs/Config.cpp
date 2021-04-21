@@ -1,7 +1,7 @@
 #include "webserv.hpp"
 
 /**
- * Config::Config 
+ * Config::Config
  * @brief  Server Default Config에서 사용하는 생성자
  */
 Config::Config():
@@ -18,7 +18,7 @@ Config::Config():
 }
 
 /**
- * Config::Config 
+ * Config::Config
  * @brief  Location Config에서 사용하는 (복사)생성자
  * @param  {Config} src           : 복사할 Server Default Config
  * @param  {std::string} loc_path : Location 경로
@@ -79,9 +79,9 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("autoindex"))
 	{
-		if (split[1].compare("on"))
+		if (!split[1].compare("on"))
 			this->autoindex = true;
-		else if (split[1].compare("off"))
+		else if (!split[1].compare("off"))
 			this->autoindex = false;
 		else
 			throw ConfigGroup::ConfigFormatException();

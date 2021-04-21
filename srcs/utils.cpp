@@ -10,19 +10,19 @@
 std::vector<std::string> ft_split(std::string str, char delim)
 {
 	std::vector<std::string> answer;
-    int curr = 0, prev = 0;
-    answer.clear();
-   
-    curr = str.find(delim);
-    while (curr != std::string::npos)
-    {
-        answer.push_back(str.substr(prev, curr - prev));
-        prev = curr + 1;
-        curr = str.find(delim, prev);
-    }
-    answer.push_back(str.substr(prev, curr - prev));
-    
-    return answer;
+	int curr = 0, prev = 0;
+	answer.clear();
+
+	curr = str.find(delim);
+	while (curr != std::string::npos)
+	{
+		answer.push_back(str.substr(prev, curr - prev));
+		prev = curr + 1;
+		curr = str.find(delim, prev);
+	}
+	answer.push_back(str.substr(prev, curr - prev));
+
+	return answer;
 }
 
 /**

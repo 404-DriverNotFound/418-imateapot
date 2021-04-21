@@ -5,8 +5,13 @@
 #include "utils.hpp"
 #include "Socket.hpp"
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
+#include <dirent.h>
+#include <unistd.h>
 #include <iostream>
+#include <fstream>
+#include <string>
 
 enum e_sock_status
 {
@@ -37,10 +42,12 @@ class Client
 		e_proc_status	_proc_status;
 		HttpRequest		_request;
 		HttpResponse	_response;
+		std::string		_file_path;
 		Config			*_config_location;
 
 		bool makeHeadMsg();
 		void makeGetMsg();
+		std::string autoindex();
 		void makePutMsg();
 		void makePostMsg();
 
@@ -64,11 +71,11 @@ class Client
 
 		class SocketAcceptException: public std::exception
 		{
-			virtual const char *what() const throw(); 
+			virtual const char *what() const throw();
 		};
 
 		class RequestFormatException: public std::exception
 		{
-			virtual const char *what() const throw(); 
+			virtual const char *what() const throw();
 		};
 };

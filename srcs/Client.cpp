@@ -21,9 +21,70 @@ bool Client::makeHeadMsg()
 
 void Client::makeGetMsg()
 {
-	if (!this->makeHeadMsg())
-		return ;
+	// !효정님이 만들어주시는 _file_path 사용하기
+
 	// TODO: body를 encoding 없이 raw로 push해주기
+	std::ifstream file;
+	struct stat info;
+	const uint8_t* body;
+	std::string line;
+
+	// this->_file_path = "/Users/amin/Project/418-imateapot/";
+	stat(this->_file_path.c_str(), &info);
+
+	// autoindex
+	if (S_ISDIR(info.st_mode) && this->_config_location->autoindex == true)
+	{
+		line = autoindex();
+		body = reinterpret_cast<const uint8_t *>(line.c_str());
+		// TODO: deque에 push_back이 제대로 들어가는지 잘 모르겠음.. 확인해야함..!
+		this->_response.getBody().push_back(*body);
+	}
+
+	// read
+	if (this->_config_location->autoindex == false)
+	{
+		file.open(this->_file_path.c_str(), O_RDONLY);
+		while (!file.eof())
+		{
+			getline(file, line);
+			body = reinterpret_cast<const uint8_t *>(line.c_str());
+			// TODO: deque에 push_back이 제대로 들어가는지 잘 모르겠음.. 확인해야함..!
+			this->_response.getBody().push_back(*body);
+		}
+		file.close();
+	}
+	// FIXME: 지우기!!!!!!!!!!!!!!!!!!!!!!!!1
+	exit(1);
+}
+
+std::string Client::autoindex()
+{
+	DIR *dir;
+	struct dirent *curr;
+	std::string res;
+	std::string url;
+
+	url = this->_request.getHeaderValue("Host") + this->_request.getStartLine().path;
+	dir = opendir(this->_file_path.c_str());
+	res += "<html>\n<body>\n";
+	res += "<h1>Directory listing</h1>\n";
+	while ((curr = readdir(dir)) != NULL)
+	{
+		if (curr->d_name[0] != '.')
+		{
+			res += "<a href=\"" + url;
+			//if (url != "/")
+			//	res += "/";
+			res += curr->d_name;
+			res += "\">";
+			res += curr->d_name;
+			res += "</a><br>\n";
+		}
+	}
+	closedir(dir);
+	res += "</body>\n</html>\n";
+	return (res);
 }
 
 void Client::makePutMsg()
@@ -110,7 +171,8 @@ void Client::setConfig(ConfigGroup &group)
 	std::string host = this->_request.getHeaderValue("Host");
 	if (host.size() == 0)
 		return;
-	host.erase(host.find(':'));
+	if (host.find(':') != std::string::npos)
+		host.erase(host.find(':'));
 	std::string path = this->_request.getStartLine().path;
 	int length = group.getServerCnt();
 	for (int i = 0; i < length; i++)
@@ -123,18 +185,19 @@ void Client::setConfig(ConfigGroup &group)
 		for (int i = 0; i < server_config.size() - 1; i++)
 		{
 			std::string config_path = server_config[i].location_path;
-			if (!path.compare(path.size() - config_path.size(), config_path.size(), config_path))
+			if (!path.compare(0, config_path.size(), config_path))
 			{
 				this->_config_location = &(server_config[i]);
-				break;
+				return;
 			}
 		}
+		return;
 	}
 }
 
 /**
  * Client::makeMsg
- * 
+ *
  */
 void Client::makeMsg()
 {
@@ -143,29 +206,31 @@ void Client::makeMsg()
 
 	res_start_line.protocol = "HTTP/1.1";
 	this->_response.insertToHeader("Server", "418-IAmATeapot");
+	std::cout << res_start_line.protocol << std::endl;
 	/**
 	 * TODO: Date, Allow insert 구현
 	 * Date: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
 	 * Allow: <http-methods>
 	 */
-	switch (req_start_line.method)
-	{
-	case GET:
-		break ;
+	//switch (req_start_line.method)
+	//{
+	//case GET:
+	this->makeGetMsg();
+	//	break ;
 
-	case HEAD:
-		this->makeHeadMsg();
-		break ;
+	//case HEAD:
+	//	this->makeHeadMsg();
+	//	break ;
 
-	case PUT:
-		break ;
+	//case PUT:
+	//	break ;
 
-	case POST:
-		break ;
+	//case POST:
+	//	break ;
 
-	default:
-		break ;
-	}
+	//default:
+	//	break ;
+	//}
 }
 
 /**

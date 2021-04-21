@@ -1,8 +1,9 @@
 #include "Http.hpp"
+#include <iostream>
 
 /**
  * std::pair(key, value)를 만들어 http 헤더(multimap)에 insert해주는 함수.
- * 
+ *
  * @param  {std::string} key   : key
  * @param  {std::string} value : value
  */
@@ -25,9 +26,14 @@ std::string Http::getHeaderValue(const std::string &key)
 	return (*result).second;
 }
 
+std::deque<uint8_t> &Http::getBody()
+{
+	return (this->_body);
+}
+
 /**
  * start_line Getter for request
- * 
+ *
  * @return {StartLineReq}  : request용 start line의 레퍼런스
  */
 StartLineReq &HttpRequest::getStartLine()
@@ -37,7 +43,7 @@ StartLineReq &HttpRequest::getStartLine()
 
 /**
  * start_line Getter for response
- * 
+ *
  * @return {StartLineRes}  : response용 start line의 레퍼런스
  */
 StartLineRes &HttpResponse::getStartLine()
