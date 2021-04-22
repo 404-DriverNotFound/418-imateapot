@@ -25,8 +25,8 @@ struct StartLineRes : public StartLine
 
 class Http
 {
-	// TODO: map으로 바꾸기
-	std::multimap<std::string, std::string>	_headers;
+	std::map<std::string, std::string>		_headers;
+	// TODO: deque를 어떻게 할지
 	std::deque<uint8_t>						_body;
 
 	public:

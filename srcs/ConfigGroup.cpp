@@ -9,6 +9,7 @@
 void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 {
 	bool is_location_start = false;
+	bool is_root_set = false;
 	std::vector<Config> server_vector;
 	Config server_config;
 
@@ -40,7 +41,11 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 			(split[0].compare("method") && split.size() > 2))
                 throw ConfigGroup::ConfigFormatException();
 
+		if (!is_root_set && split[0].compare("root"))
+			throw ConfigGroup::ConfigFormatException();
+
         server_config.parseConfig(split, false);
+		is_root_set = true;
 		std::getline(config_file, line);
     }
 
@@ -62,6 +67,7 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
  */
 Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line, std::string &loc, Config &server_config)
 {
+	bool is_root_set = false;
     Config location_config(server_config, loc);
 
 	std::getline(config_file, line);
@@ -69,8 +75,11 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
 	while (!config_file.eof())
     {
         if (isBlankLine(line))
+		{
+			std::getline(config_file, line);
             continue;
-
+		}
+		
         if (line[0] != '\t' || line[1] != '\t')
 			break;
 		if (line[2] == '\t')
@@ -81,7 +90,11 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
 		if (split[0].compare("method") && split.size() > 2)
 			throw ConfigGroup::ConfigFormatException();
 
+		if (!is_root_set && split[0].compare("root"))
+			throw ConfigGroup::ConfigFormatException();
+
         location_config.parseConfig(split, true);
+		is_root_set = true;
 		std::getline(config_file, line);
     }
     return (location_config);
@@ -106,7 +119,10 @@ ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20):
     while (!config_file.eof())
     {
         if (isBlankLine(line))
+		{
+			std::getline(config_file, line);
             continue;
+		}
         if (line.compare("server"))
             throw ConfigGroup::ConfigFormatException();
         this->parseServer(config_file, line);

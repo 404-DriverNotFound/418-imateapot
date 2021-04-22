@@ -45,7 +45,7 @@ class Client
 
 		void makeFilePath();
 		void checkFilePath();
-		void makeStatus(int status);
+		void makeStatus(uint16_t status);
 		std::string makeContentLocation();
 
 		void makeHeadMsg();

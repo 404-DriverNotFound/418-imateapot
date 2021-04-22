@@ -4,10 +4,10 @@
  * Config::Config 
  * @brief  Server Default Config에서 사용하는 생성자
  */
+
+//TODO: index, error_page 고치기
 Config::Config():
 	port(80),
-	index("index.html"),
-	error_page("error.html"),
 	head_length(8000),
 	body_length(1000000),
 	autoindex(false),
@@ -124,9 +124,9 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 		else
 		{
 			this->root = split[1];
-			if (this->root.data()[0] != '/')
-				throw ConfigGroup::ConfigFormatException();
 			this->server_root = this->root;
+			this->index = this->root + "/index.html";
+			this->error_page = this->root + "/error.html";
 		}
 	}
 	else

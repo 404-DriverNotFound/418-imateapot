@@ -12,7 +12,7 @@ std::vector<std::string> ft_split(std::string str, char delim)
 	std::vector<std::string> answer;
     int curr = 0, prev = 0;
     answer.clear();
-   
+
     curr = str.find(delim);
     while (curr != std::string::npos)
     {
@@ -66,7 +66,6 @@ std::string getHTTPTimeFormat(time_t time)
 {
 	char s[150];
     struct tm *tm_time = std::gmtime(&time);
-    // ? gmtime 사용해도 될까요?
 
 	strftime(s, sizeof(s), "%a, %d %b %Y %T GMT", tm_time);
     return (s);

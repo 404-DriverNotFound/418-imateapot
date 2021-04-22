@@ -17,9 +17,8 @@ void Client::makeFilePath()
 		std::string dir_path = path.substr(config.location_path.length());
 		this->_file_path.append(dir_path);
 	}
-	else
+	else if (path.length() > 1)
 		this->_file_path.append(path);
-
 	/**
 	 * std::cout << "path: " << this->_file_path << std::endl;
 	 * 일단 테스트용으로 남겨둬봅니다.
@@ -37,37 +36,55 @@ void Client::checkFilePath()
 
 	if (stat(this->_file_path.c_str(), &path_stat)) // if stat() failed
 	{
-		this->makeStatus(ERROR);
+		switch (errno)
+		{
+		case EACCES:
+		case EFAULT:
+		case ENOENT:
+		case ENOTDIR:
+			this->makeStatus(404);
+			break;
+		
+		default:
+			this->makeStatus(503);
+			break;
+		}
 		return ;
 	}
 
 	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
 	{
 		this->makeStatus(200);
-		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtim.tv_sec);
+		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtime);
 		std::cout << last_modified << std::endl;
 		this->_response.insertToHeader("Last-modified", last_modified);
 		return ;
 	}
 	// if _file_path is a dir
-	std::string root = config.root + "/";
-	if (this->_file_path == root) // if in root
+	std::string root = config.root;
+
+	if (config.autoindex) // if autoindex is on
 	{
-		if (config.index.find(config.root) == std::string::npos)
-		{
-			if (config.autoindex)
-				this->makeStatus(200);
-			else
-				this->makeStatus(404);
-		}
-		else
-		{
-			this->_file_path = config.index;
-			this->makeStatus(200);
-		}
+		this->makeStatus(200);
+		return ;
 	}
-	else // if not in root directory
+
+	// if autoindex is off
+	if (this->_file_path != root) // if not in root
+	{
 		this->makeStatus(404);
+		return ;
+	}
+	// if in root
+	int fd;
+	if ((fd = open(config.index.c_str(), O_RDONLY)) == -1)
+	{
+		this->makeStatus(404);
+		return ;
+	}
+	close(fd);
+	this->_file_path = config.index;
+	this->makeStatus(200);
 }
 
 /**
@@ -75,19 +92,24 @@ void Client::checkFilePath()
  * response에 status code를 부여.
  * @param  {int} status : 부여하고자 하는 status code.
  */
-void Client::makeStatus(int status)
+void Client::makeStatus(uint16_t status)
 {
 	StartLineRes &start_line = this->_response.getStartLine();
 	Config &config = *this->_config_location;
 
-	if (status == ERROR)
-		start_line.status_code = 404;
-		// TODO: 자세한 에러 처리 여부에 대한 논의 필요 (한다면 errno에 따라서 처리)
-	else
-		start_line.status_code = (uint16_t)status;
+	start_line.status_code = status;
 
 	if (start_line.status_code >= 400)
-		_file_path = config.error_page;
+	{
+		int fd;
+		if ((fd = open(config.error_page.c_str(), O_RDONLY)) == -1)
+		{
+			this->_file_path = "";
+			return ;
+		}
+		close(fd);
+		this->_file_path = config.error_page;
+	}
 }
 
 /**
@@ -126,20 +148,18 @@ void Client::makeHeadMsg()
 	this->makeFilePath();
 	this->checkFilePath();
 	std::string content_location = this->makeContentLocation();
-	/**
+	
 	std::cout << "code: " << (unsigned int)start_line.status_code << std::endl;
 	std::cout << "path: " << this->_file_path << std::endl;
 	std::cout << "contentLocation: " << content_location << std::endl;
-	exit(1);
-	 * 일단 테스트용으로 남겨둬봅니다.
-	 */
+	exit(1); // FIXME: 지울 것
 
 	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Location", content_location);
 	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Transfer-Encoding", "chunked");
 	/**
-	 * TODO: retry-after를 exception 발생했을 시
+	 * TODO: retry-after를 exception 발생했을 시 (503 보낼 때)
 	 */
 }
 
@@ -275,13 +295,14 @@ void Client::makeMsg()
 	 * TODO: config에 없는 method가 들어왔을 때에 대한 response 처리
 	 * (405 Method Not Allowed)
 	 */
-	switch (req_start_line.method)
+	/*switch (req_start_line.method)
 	{
 	case GET:
 		break ;
 
-	case HEAD:
+	case HEAD:*/
 		this->makeHeadMsg();
+		/*
 		break ;
 
 	case PUT:
@@ -292,7 +313,7 @@ void Client::makeMsg()
 
 	default:
 		break ;
-	}
+	}*/
 }
 
 /**
