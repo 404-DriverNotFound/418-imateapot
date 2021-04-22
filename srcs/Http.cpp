@@ -2,8 +2,8 @@
 #include <iostream>
 
 /**
- * std::pair(key, value)를 만들어 http 헤더(multimap)에 insert해주는 함수.
- *
+ * std::pair(key, value)를 만들어 http 헤더(map)에 insert해주는 함수.
+ * 
  * @param  {std::string} key   : key
  * @param  {std::string} value : value
  */
@@ -20,7 +20,7 @@ void Http::insertToHeader(const std::string &key, const std::string &value)
  */
 std::string Http::getHeaderValue(const std::string &key)
 {
-	std::multimap<std::string, std::string>::iterator result = this->_headers.find(key);
+	std::map<std::string, std::string>::iterator result = this->_headers.find(key);
 	if (result == this->_headers.end())
 		return "";
 	return (*result).second;

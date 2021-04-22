@@ -36,3 +36,17 @@ std::string numToMethod(const e_method num)
 		return "POST";
 	return "ERROR";
 }
+
+std::string makeMethodList(bool *methods)
+{
+	std::string	list;
+	for (int i = 0; i <= POST; i++)
+		if (methods[i])
+		{
+			list.append(numToMethod((e_method)i));
+			list.append(", ");
+		}
+	if (!list.empty())
+		list.erase(list.length() - 2);
+	return (list);
+}

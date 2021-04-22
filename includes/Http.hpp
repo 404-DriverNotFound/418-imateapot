@@ -20,13 +20,13 @@ struct StartLineReq : public StartLine
 
 struct StartLineRes : public StartLine
 {
-	uint8_t		status_code;
+	uint16_t		status_code;
 };
 
 class Http
 {
-	std::multimap<std::string, std::string>	_headers;
-	// ! 자료 구조에 대해서 상의해야될 것 같습니다. 굳이 uint8_t로 써야하는지?
+	std::map<std::string, std::string>		_headers;
+	// TODO: deque를 어떻게 할지
 	std::deque<uint8_t>						_body;
 
 	public:

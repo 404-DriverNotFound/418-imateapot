@@ -54,7 +54,15 @@ void Webserver::startServer()
 			for (size_t i = 0; i < this->_socks.size(); i++)
 				if (FT_FD_ISSET(this->_socks[i].getFd(), &(temp_fd_read)))
 				{
-					this->_clients.push_back(Client(this->_socks[i]));
+					try
+					{
+						this->_clients.push_back(Client(this->_socks[i]));
+					}
+					catch(const std::exception& e)
+					{
+						std::cerr << e.what() << '\n';
+						break ;
+					}
 					Client &created = *(this->_clients.rbegin());
 					FT_FD_SET(created.getFd(), &(this->_fd_read));
 					FT_FD_SET(created.getFd(), &(this->_fd_write));
@@ -140,6 +148,7 @@ void Webserver::selectErrorHandling(std::vector<int>& err_index)
 	for (int i = err_index.size() - 1; i >= 0; i--)
 	{
 		std::vector<Client>::iterator client = this->_clients.begin() + err_index[i];
+		// TODO: 503 response
 		close(client->getFd());
 		FT_FD_CLR(client->getFd(), &(this->_fd_read));
 		FT_FD_CLR(client->getFd(), &(this->_fd_write));

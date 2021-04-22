@@ -7,6 +7,15 @@ int main(int argc, char **argv)
 		max_connection = atoi(argv[2]);
 	if (argc < 2 || argc > 3)
 		return 1;
-	Webserver server(argv[1], max_connection);
-	server.startServer();
+	try
+	{
+		Webserver server(argv[1], max_connection);
+		server.startServer();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		return 1;
+	}
+	return 0;
 }

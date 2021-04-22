@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <arpa/inet.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
@@ -45,7 +47,12 @@ class Client
 		std::string		_file_path;
 		Config			*_config_location;
 
-		bool makeHeadMsg();
+		void makeFilePath();
+		void checkFilePath();
+		void makeStatus(uint16_t status);
+		std::string makeContentLocation();
+
+		void makeHeadMsg();
 		void makeGetMsg();
 		std::string autoindex();
 		void makePutMsg();
