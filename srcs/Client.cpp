@@ -29,7 +29,6 @@ void Client::makeGetMsg()
 	const uint8_t* body;
 	std::string line;
 
-	// this->_file_path = "/Users/amin/Project/418-imateapot/";
 	stat(this->_file_path.c_str(), &info);
 
 	// autoindex
@@ -73,9 +72,7 @@ std::string Client::autoindex()
 	{
 		if (curr->d_name[0] != '.')
 		{
-			res += "<a href=\"" + url;
-			//if (url != "/")
-			//	res += "/";
+			res += "<a href=\"http://" + url;
 			res += curr->d_name;
 			res += "\">";
 			res += curr->d_name;
@@ -169,18 +166,24 @@ void Client::parseHeader(const std::string &line)
 void Client::setConfig(ConfigGroup &group)
 {
 	std::string host = this->_request.getHeaderValue("Host");
+
 	if (host.size() == 0)
-		return;
+		return ;
+
 	if (host.find(':') != std::string::npos)
 		host.erase(host.find(':'));
+
 	std::string path = this->_request.getStartLine().path;
 	int length = group.getServerCnt();
+
 	for (int i = 0; i < length; i++)
 	{
 		std::vector<Config> &server_config = group.getConfig(i);
 		Config &defaultConfig = *(server_config.rbegin());
+
 		if (this->_port != defaultConfig.port || host.compare(defaultConfig.server_name))
 			continue;
+
 		this->_config_location = &*(server_config.rbegin());
 		for (int i = 0; i < server_config.size() - 1; i++)
 		{
@@ -203,34 +206,36 @@ void Client::makeMsg()
 {
 	StartLineRes &res_start_line = this->_response.getStartLine();
 	StartLineReq &req_start_line = this->_request.getStartLine();
+	
+	std::cout << req_start_line << std::endl;
 
 	res_start_line.protocol = "HTTP/1.1";
 	this->_response.insertToHeader("Server", "418-IAmATeapot");
-	std::cout << res_start_line.protocol << std::endl;
 	/**
 	 * TODO: Date, Allow insert 구현
 	 * Date: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
 	 * Allow: <http-methods>
 	 */
-	//switch (req_start_line.method)
-	//{
-	//case GET:
-	this->makeGetMsg();
-	//	break ;
+	switch (req_start_line.method)
+	{
+	case HEAD:
+		this->makeHeadMsg();
+		break ;
+	
+	case GET:
+		this->makeGetMsg();
+		break ;
 
-	//case HEAD:
-	//	this->makeHeadMsg();
-	//	break ;
+	case PUT:
+		break ;
 
-	//case PUT:
-	//	break ;
+	case POST:
+		break ;
 
-	//case POST:
-	//	break ;
-
-	//default:
-	//	break ;
-	//}
+	default:
+		break ;
+	}
+	exit(1);
 }
 
 /**

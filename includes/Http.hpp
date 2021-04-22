@@ -50,3 +50,5 @@ class HttpResponse : public Http
 	public:
 		StartLineRes &getStartLine();
 };
+
+std::ostream &operator<<(std::ostream &o, StartLineReq &rhs);

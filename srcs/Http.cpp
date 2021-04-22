@@ -50,3 +50,9 @@ StartLineRes &HttpResponse::getStartLine()
 {
 	return (this->_start_line);
 }
+
+std::ostream &operator<<(std::ostream &o, StartLineReq &rhs)
+{
+	o << numToMethod(rhs.method) << " " << rhs.path << " " << rhs.protocol << std::endl;
+	return o;
+}
