@@ -20,7 +20,7 @@ void Client::makeFilePath()
 	else if (path.length() > 1)
 		this->_file_path.append(path);
 	/**
-	 * std::cout << "path: " << this->_file_path << std::endl;
+	 * std::cout << "path: " << this->_file_path  << std::endl;
 	 * 일단 테스트용으로 남겨둬봅니다.
 	*/
 }
@@ -178,9 +178,7 @@ void Client::makeGetMsg()
 	if (S_ISDIR(info.st_mode) && this->_config_location->autoindex == true)
 	{
 		line = this->autoindex();
-		body = reinterpret_cast<const uint8_t *>(line.c_str());
-		// TODO: deque에 push_back이 제대로 들어가는지 잘 모르겠음.. 확인해야함..!
-		this->_response.getBody().push_back(*body);
+		this->_response.getBody().push_back(line);
 	}
 
 	// read
@@ -190,9 +188,7 @@ void Client::makeGetMsg()
 		while (!file.eof())
 		{
 			getline(file, line);
-			body = reinterpret_cast<const uint8_t *>(line.c_str());
-			// TODO: deque에 push_back이 제대로 들어가는지 잘 모르겠음.. 확인해야함..!
-			this->_response.getBody().push_back(*body);
+			this->_response.getBody().push_back(line);
 		}
 		file.close();
 	}
@@ -244,6 +240,7 @@ void Client::makePostMsg()
  */
 Client::Client(Socket &socket):
 	_port(socket.getPort()),
+	_body_len_buffer(CHUNKED_READY),
 	_sock_status(INITIALIZE),
 	_proc_status(PROC_INITIALIZE),
 	_file_path(),
@@ -300,6 +297,10 @@ void Client::parseHeader(const std::string &line)
 	std::string value = line.substr(headers[0].size() + 1);
 	ft_trim(value, " \t");
 	this->_request.insertToHeader(headers[0], value);
+	
+	// Chunked인지 아닌지 체크용 로직!
+	if (!headers[0].compare("Content-Length"))
+		this->_body_len_buffer = ENCODING_NOT_CHUNKED;
 }
 
 /**
@@ -339,6 +340,27 @@ void Client::setConfig(ConfigGroup &group)
 			}
 		}
 		return;
+	}
+}
+
+void Client::parseBody(std::string &tmp, size_t pos)
+{
+	if (this->_body_len_buffer == ENCODING_NOT_CHUNKED)
+	{
+		tmp.erase(tmp[pos - 1] == '\r' ? pos - 1 : pos);
+		this->_request.getBody().push_back(tmp);
+	}
+	else if (this->_body_len_buffer == CHUNKED_READY)
+		this->_body_len_buffer = std::atoi(tmp.c_str()); // TODO: 16진수로 변환
+		// TODO: 0이 들어왔을때 끝나는것 처리
+	else
+	{
+		if (tmp.length() < this->_body_len_buffer)
+			tmp.erase(this->_body_len_buffer);
+		this->_request.getBody().push_back(tmp);
+		this->_body_len_buffer -= tmp.length();
+		if (this->_body_len_buffer <= 0)
+			this->_body_len_buffer = CHUNKED_READY;
 	}
 }
 
@@ -388,6 +410,7 @@ void Client::makeMsg()
  */
 void Client::parseBuffer(char *buff, int len)
 {
+	std::string tmp;
 	size_t pos;
 
 	this->_buffer.append(buff, len);
@@ -399,25 +422,29 @@ void Client::parseBuffer(char *buff, int len)
 		this->_sock_status = RECV_START_LINE;
 	while ((pos = this->_buffer.find('\n')) != std::string::npos)
 	{
-		std::string tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
-		if (this->_sock_status == RECV_START_LINE)
+		if (this->_sock_status == RECV_BODY)
 		{
-			this->parseStartLine(tmp);
-			this->_sock_status = RECV_HEADER;
+			tmp = this->_buffer.substr(0, pos + 1);
+			this->parseBody(tmp, pos);
 		}
-		else if (this->_sock_status == RECV_HEADER)
+		else
 		{
-			if (tmp.size() == 0)
+			tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
+			if (this->_sock_status == RECV_START_LINE)
 			{
-				this->_sock_status = RECV_BODY;
-				this->_proc_status = CREATING;
+				this->parseStartLine(tmp);
+				this->_sock_status = RECV_HEADER;
 			}
-			else
-				this->parseHeader(tmp);
-		}
-		else if (this->_sock_status == RECV_BODY)
-		{
-			// TODO: body 들어오는 경우 test 필요!!
+			else if (this->_sock_status == RECV_HEADER)
+			{
+				if (tmp.size() == 0)
+				{
+					this->_sock_status = RECV_BODY;
+					this->_proc_status = CREATING;
+				}
+				else
+					this->parseHeader(tmp);
+			}
 		}
 		this->_buffer.erase(0, pos + 1);
 	}
@@ -426,6 +453,11 @@ void Client::parseBuffer(char *buff, int len)
 int Client::getFd()
 {
 	return this->_fd;
+}
+
+e_sock_status Client::getSockStatus()
+{
+	return this->_sock_status;
 }
 
 e_proc_status Client::getProcStatus()

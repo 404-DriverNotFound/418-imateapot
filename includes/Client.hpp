@@ -34,11 +34,15 @@ enum e_proc_status
 	SENDING
 };
 
+#define ENCODING_NOT_CHUNKED -2
+#define CHUNKED_READY -1
+
 class Client
 {
 	private:
 		int				_fd;
 		uint16_t		_port;
+		int				_body_len_buffer;
 		std::string		_buffer;
 		e_sock_status	_sock_status;
 		e_proc_status	_proc_status;
@@ -66,7 +70,7 @@ class Client
 		void parseStartLine(const std::string &);
 		void parseHeader(const std::string &);
 		void setConfig(ConfigGroup &group);
-		void parseBody();
+		void parseBody(std::string &, size_t);
 
 		void makeMsg();
 		void sendMsg();
@@ -74,6 +78,7 @@ class Client
 		void parseBuffer(char *buff, int len);
 
 		int				getFd();
+		e_sock_status	getSockStatus();
 		e_proc_status	getProcStatus();
 
 		class SocketAcceptException: public std::exception

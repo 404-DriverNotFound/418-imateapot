@@ -67,7 +67,8 @@ void Webserver::startServer()
 			std::vector<int> err_index;
 			for (int i = 0; i < this->_clients.size(); i++)
 			{
-				// TODO: client 상태에 따라 read하지 않고 continue;
+				if (this->_clients[i].getSockStatus() > RECV_BODY)
+					continue;
 				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_read)))
 				{
 					try
