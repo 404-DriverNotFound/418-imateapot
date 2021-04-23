@@ -14,7 +14,7 @@ std::vector<std::string> ft_split(std::string str, char delim);
 bool		isBlankLine(const std::string &line);
 void		ft_trim(std::string &str, const std::string cut);
 std::string	getCurrentTime();
-std::string getHTTPTimeFormat(time_t time);
+std::string getHttpTimeFormat(time_t time);
 
 
 #ifndef FT_FD_SETSIZE
