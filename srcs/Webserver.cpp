@@ -40,9 +40,6 @@ void Webserver::startServer()
 		memcpy(&temp_fd_read, &(this->_fd_read), sizeof(fd_set));
 		memcpy(&temp_fd_write, &(this->_fd_write), sizeof(fd_set));
 
-		/**
-		* TODO: select의 max_fd 값은 고정인지 유동인지
-		*/
 		state = select(FT_FD_SETSIZE, &temp_fd_read, &temp_fd_write, NULL, NULL);
 		switch (state)
 		{

@@ -4,8 +4,6 @@
  * Config::Config
  * @brief  Server Default Config에서 사용하는 생성자
  */
-
-//TODO: index, error_page 고치기
 Config::Config():
 	port(80),
 	head_length(8000),

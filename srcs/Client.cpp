@@ -177,7 +177,7 @@ void Client::makeGetMsg()
 	// autoindex
 	if (S_ISDIR(info.st_mode) && this->_config_location->autoindex == true)
 	{
-		line = autoindex();
+		line = this->autoindex();
 		body = reinterpret_cast<const uint8_t *>(line.c_str());
 		// TODO: deque에 push_back이 제대로 들어가는지 잘 모르겠음.. 확인해야함..!
 		this->_response.getBody().push_back(*body);
