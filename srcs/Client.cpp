@@ -121,9 +121,6 @@ void Client::makeHeadMsg()
 	this->_response.insertToHeader("Content-Location", content_location);
 	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Transfer-Encoding", "chunked");
-	/**
-	 * TODO: retry-after를 exception 발생했을 시 (503 보낼 때)
-	 */
 }
 
 void Client::makeGetMsg()
@@ -408,12 +405,15 @@ void Client::makeErrorStatus(uint16_t status)
 	case 400:
 	case 403:
 	case 404:
-	case 413:
 	case 431:
-	case 503:
 	case 505:
 		break ;
 		// 위 status code에는 헤더를 추가할 필요가 없음.
+
+	case 413:
+	case 503:
+		this->_response.insertToHeader("Retry-After", "120");
+		break ;
 	
 	case 401:
 		this->_response.insertToHeader("WWW-Authenticate", "Basic");

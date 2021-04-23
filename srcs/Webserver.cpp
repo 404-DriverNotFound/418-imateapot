@@ -115,7 +115,7 @@ void Webserver::readRequest(Client &client)
 
 	len = read(client.getFd(), buff, READ_BUFFER);
 	if (len < 0)
-		throw Webserver::SocketReadException();
+		throw 503;
 	if (len == 0)
 	{
 		// TODO: 정상 종료되었을때 response 보내고 close하기!!
