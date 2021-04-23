@@ -323,6 +323,21 @@ void Client::makeMsg()
 	StartLineReq &start_line = this->_request.getStartLine();
 	
 	std::cout << start_line << std::endl;
+	
+	if (!this->_config_location->auth.empty())
+	{
+		std::string temp = this->_request.getHeaderValue("auth");
+
+		if (temp.empty())
+			throw 401;
+
+		if (this->_config_location->auth != temp)
+			throw 403;
+	}
+
+	if (!(this->_config_location->method[start_line.method]))
+		throw 405;
+
 	this->makeBasicHeader();
 
 	switch (start_line.method)
