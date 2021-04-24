@@ -43,7 +43,7 @@ void Client::checkFilePath()
 		case ENOENT:
 		case ENOTDIR:
 			throw 404;
-		
+
 		default:
 			throw 503;
 		}
@@ -76,7 +76,7 @@ void Client::checkFilePath()
 }
 
 /**
- * Client::makeContentLocation 
+ * Client::makeContentLocation
  * file_path로부터 Content-Location을 구성.
  * @return {std::string}  : 만들어진 content-location
  */
@@ -111,7 +111,7 @@ void Client::makeHeadMsg()
 	this->makeFilePath();
 	this->checkFilePath();
 	std::string content_location = this->makeContentLocation();
-	
+
 	std::cout << "code: " << (unsigned int)start_line.status_code << std::endl;
 	std::cout << "path: " << this->_file_path << std::endl;
 	std::cout << "contentLocation: " << content_location << std::endl;
@@ -321,17 +321,16 @@ void Client::makeBasicHeader()
 void Client::makeMsg()
 {
 	StartLineReq &start_line = this->_request.getStartLine();
-	
+
 	std::cout << start_line << std::endl;
-	
+
 	if (!this->_config_location->auth.empty())
 	{
-		std::string temp = this->_request.getHeaderValue("auth");
-
-		if (temp.empty())
+		std::vector<std::string> temp = ft_split(this->_request.getHeaderValue("Authorization"), ' ');
+		if (temp[0].empty())
 			throw 401;
 
-		if (this->_config_location->auth != temp)
+		if (!temp[0].compare(this->_config_location->auth))
 			throw 403;
 	}
 
@@ -345,7 +344,7 @@ void Client::makeMsg()
 	case HEAD:
 		this->makeHeadMsg();
 		break ;
-	
+
 	case GET:
 		this->makeGetMsg();
 		break ;
@@ -412,11 +411,11 @@ void Client::makeErrorStatus(uint16_t status)
 	StartLineRes &start_line = this->_response.getStartLine();
 	Config &config = *this->_config_location;
 	int fd;
-	
+
 	start_line.status_code = status;
 
 	/**
-	 * TODO: 408(Request Timeout) 
+	 * TODO: 408(Request Timeout)
 	 */
 	switch (status)
 	{
@@ -429,11 +428,11 @@ void Client::makeErrorStatus(uint16_t status)
 	case 505:
 		break ;
 		// 위 status code에는 헤더를 추가할 필요가 없음.
-	
+
 	case 401:
 		this->_response.insertToHeader("WWW-Authenticate", "Basic");
 		break ;
-	
+
 	case 405:
 		this->_response.insertToHeader("Allow", makeMethodList(this->_config_location->method));
 		break ;
@@ -441,7 +440,7 @@ void Client::makeErrorStatus(uint16_t status)
 	case 418:
 		std::cerr << "☕ TEA-POT! ☕" << std::endl;
 		break;
-	
+
 	default:
 		break ;
 	}
