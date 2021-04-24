@@ -62,6 +62,60 @@ void ft_trim(std::string &str, const std::string cut)
 		str.clear();
 }
 
+/**
+ * ft_atoi
+ * @brief  cstdlib의 atoi의 대체함수입니다.
+ * @param  {std::string} str : 10진수 숫자의 문자열
+ * @return {int}             : 변환된 숫자
+ */
+int	ft_atoi(const std::string &str)
+{
+	unsigned long long result = 0;
+	int minus_flag = 1, index = 0;
+
+	if (!str.empty() && (str[index] == '+' || str[index] == '-'))
+	{
+		index++;
+		if (str[index] == '-')
+			minus_flag = -1;
+	}
+	while ('0' <= str[index] && str[index] <= '9')
+	{
+		result *= 10;
+		result += (str[index] - '0');
+		index++;
+	}
+	result *= minus_flag;
+	return static_cast<int>(result);
+}
+
+/**
+ * ft_atoi
+ * @brief  cstdlib의 strtol의 대체함수입니다. 그중 unsigned 16진수에 한정지어 처리합니다.
+ * @param  {std::string} str : 16진수 숫자의 문자열
+ * @return {int}             : 변환된 숫자
+ */
+unsigned long	ft_unsigned_hextol(const std::string &str)
+{
+	unsigned long	result = 0;
+	int				index = 0;
+
+	while (('0' <= str[index] && str[index] <= '9') ||
+			('A' <= str[index] && str[index] <= 'F') ||
+			('a' <= str[index] && str[index] <= 'f'))
+	{
+		result *= 16;
+		if (str[index] <= '9')
+			result += (str[index] - '0');
+		else if (str[index] <= 'F')
+			result += (str[index] - 'A' + 10);
+		else
+			result += (str[index] - 'a' + 10);
+		index++;
+	}
+	return result;
+}
+
 std::string getHTTPTimeFormat(time_t time)
 {
 	char s[150];

@@ -351,7 +351,7 @@ void Client::parseBody(std::string &tmp, size_t pos)
 		this->_request.getBody().push_back(tmp);
 	}
 	else if (this->_body_len_buffer == CHUNKED_READY)
-		this->_body_len_buffer = std::atoi(tmp.c_str()); // TODO: 16진수로 변환
+		this->_body_len_buffer = static_cast<int>(ft_unsigned_hextol(tmp));
 		// TODO: 0이 들어왔을때 끝나는것 처리
 	else
 	{
