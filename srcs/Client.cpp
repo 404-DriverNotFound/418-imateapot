@@ -327,9 +327,9 @@ void Client::makeMsg()
 	if (!this->_config_location->auth.empty())
 	{
 		std::vector<std::string> temp = ft_split(this->_request.getHeaderValue("Authorization"), ' ');
-		if (temp[0].empty())
+		if (temp[1].empty())
 			throw 401;
-		if (!temp[0].compare(this->_config_location->auth))
+		if (!temp[1].compare(this->_config_location->auth))
 			throw 403;
 	}
 
