@@ -326,12 +326,11 @@ void Client::makeMsg()
 	
 	if (!this->_config_location->auth.empty())
 	{
-		std::string temp = this->_request.getHeaderValue("auth");
-
-		if (temp.empty())
+		std::vector<std::string> temp = ft_split(this->_request.getHeaderValue("Authorization"), ' ');
+		if (temp[0].empty())
 			throw 401;
 
-		if (this->_config_location->auth != temp)
+		if (!temp[0].compare(this->_config_location->auth))
 			throw 403;
 	}
 
