@@ -1,11 +1,14 @@
 
 # .github/workflows/basic_test.yml
-name: norminette
+name: webserv_basic_test
 on: [push]
 
 jobs:
   make_test:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
     name: 42 Make Test
     steps:
     - uses: actions/checkout@v2
