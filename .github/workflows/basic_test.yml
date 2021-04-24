@@ -1,0 +1,16 @@
+
+# .github/workflows/basic_test.yml
+name: webserv_basic_test
+on: [push]
+
+jobs:
+  make_test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
+    name: 42 Make Test
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check basic Makefile jobs
+      run: make && make re && make clean && make all && make fclean
