@@ -75,7 +75,7 @@ void Client::checkFilePath()
 }
 
 /**
- * Client::makeContentLocation 
+ * Client::makeContentLocation
  * file_path로부터 Content-Location을 구성.
  * @return {std::string}  : 만들어진 content-location
  */
@@ -416,9 +416,7 @@ void Client::makeErrorStatus(uint16_t status)
 	case 400:
 	case 403:
 	case 404:
-	case 413:
 	case 431:
-	case 503:
 	case 505:
 		break ;
 		// 위 status code에는 헤더를 추가할 필요가 없음.
@@ -427,7 +425,7 @@ void Client::makeErrorStatus(uint16_t status)
 	case 503:
 		this->_response.insertToHeader("Retry-After", "120");
 		break ;
-	
+
 	case 401:
 		this->_response.insertToHeader("WWW-Authenticate", "Basic");
 		break ;
