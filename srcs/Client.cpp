@@ -163,7 +163,6 @@ void Client::makeGetMsg()
 	// TODO: body를 encoding 없이 raw로 push해주기
 	std::ifstream file;
 	struct stat info;
-	const uint8_t* body;
 	std::string line;
 
 	stat(this->_file_path.c_str(), &info);
@@ -344,19 +343,22 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 {
 	if (this->_content_length_left != EMPTY_CONTENT_LENGTH)
 	{
-		if (tmp.length() > this->_content_length_left)
+		if (static_cast<int>(tmp.length()) > this->_content_length_left)
 		{
 			tmp.erase(this->_content_length_left);
 			this->_content_length_left = 0;
 		}
 		else
 		{
-			tmp.erase(tmp[pos - 1] == '\r' ? pos - 1 : pos);
+			if (tmp[pos] == '\n')
+				tmp.erase(tmp[pos - 1] == '\r' ? pos - 1 : pos);
 			this->_content_length_left -= (pos + 1);
 		}
 		this->_request.getBody().push_back(tmp);
 		if (this->_content_length_left <= 0)
+		{
 			return PARSE_BODY_END;
+		}
 	}
 	else if (this->_chunked_len == CHUNKED_READY)
 	{
@@ -366,7 +368,7 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 	}
 	else
 	{
-		if (tmp.length() < this->_chunked_len)
+		if (static_cast<int>(tmp.length()) < this->_chunked_len)
 			tmp.erase(this->_chunked_len);
 		this->_request.getBody().push_back(tmp);
 		this->_chunked_len -= tmp.length();
