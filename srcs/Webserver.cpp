@@ -11,8 +11,7 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 
 	for (int i = 0; i < this->_configs.getServerCnt(); i++)
 	{
-		this->_servers.push_back(Server(this->_configs.getConfig(i)));
-		uint16_t port = this->_servers[i].getPort();
+		uint16_t port = this->_configs.getConfig(i).rbegin()->port;
 		if (std::find(server_ports.begin(), server_ports.end(), port) == server_ports.end())
 			server_ports.push_back(port);
 	}
@@ -64,8 +63,8 @@ void Webserver::startServer()
 					FT_FD_SET(created.getFd(), &(this->_fd_read));
 					FT_FD_SET(created.getFd(), &(this->_fd_write));
 				}
-			std::map<int, int> error_info;
-			for (int i = 0; i < this->_clients.size(); i++)
+			std::vector<int> err_index;
+			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
 				// TODO: client 상태에 따라 read하지 않고 continue;
 				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_read)))
@@ -82,7 +81,7 @@ void Webserver::startServer()
 			}
 			this->handleHttpError(error_info, true);
 
-			for (int i = 0; i < this->_clients.size(); i++)
+			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
 				if (this->_clients[i].getProcStatus() == PROC_INITIALIZE)
 					continue ;
@@ -129,7 +128,7 @@ void Webserver::handleResponse(Client &client)
 {
 	if (client.getProcStatus() == CREATING)
 	{
-		client.setConfig(_configs);
+		client.setConfig(this->_configs);
 		client.makeMsg();
 	}
 		// create
