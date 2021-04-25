@@ -119,7 +119,6 @@ void Client::makeStatus(uint16_t status)
  */
 std::string Client::makeContentLocation()
 {
-	StartLineRes &start_line = this->_response.getStartLine();
 	Config &config = *this->_config_location;
 	std::string host = this->_request.getHeaderValue("Host");
 
@@ -143,7 +142,6 @@ std::string Client::makeContentLocation()
 void Client::makeHeadMsg()
 {
 	StartLineRes &start_line = this->_response.getStartLine();
-	Config &config = *this->_config_location;
 
 	this->makeFilePath();
 	this->checkFilePath();
@@ -329,7 +327,7 @@ void Client::setConfig(ConfigGroup &group)
 			continue;
 
 		this->_config_location = &*(server_config.rbegin());
-		for (int i = 0; i < server_config.size() - 1; i++)
+		for (unsigned long i = 0; i < server_config.size() - 1; i++)
 		{
 			std::string config_path = server_config[i].location_path;
 			if (!path.compare(0, config_path.size(), config_path))

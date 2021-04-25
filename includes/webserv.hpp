@@ -7,7 +7,6 @@
 #include "ConfigGroup.hpp"
 #include "Http.hpp"
 #include "Method.hpp"
-#include "Server.hpp"
 #include "Socket.hpp"
 #include "Webserver.hpp"
 
