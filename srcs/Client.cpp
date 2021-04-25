@@ -48,7 +48,7 @@ void Client::checkFilePath()
 
 	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
 	{
-		std::string last_modified = getHttpTimeFormat(path_stat.st_mtime);
+		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtime);
 		std::cout << last_modified << std::endl;
 		this->_response.insertToHeader("Last-modified", last_modified);
 		return ;
