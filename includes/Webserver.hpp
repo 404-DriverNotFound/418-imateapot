@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ConfigGroup.hpp"
-#include "Server.hpp"
 #include "Socket.hpp"
 #include "Client.hpp"
 
@@ -15,7 +14,6 @@ class Webserver
 {
 	private:
 		ConfigGroup			_configs;
-		std::vector<Server>	_servers;
 		fd_set				_fd_exception;
 		fd_set				_fd_read;
 		fd_set				_fd_write;
