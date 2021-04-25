@@ -148,7 +148,7 @@ void Client::makeHeadMsg()
 	std::cout << "code: " << (unsigned int)start_line.status_code << std::endl;
 	std::cout << "path: " << this->_file_path << std::endl;
 	std::cout << "contentLocation: " << content_location << std::endl;
-	exit(1); // FIXME: 지울 것
+	// exit(1); // FIXME: 지울 것
 
 	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Location", content_location);
@@ -189,7 +189,7 @@ void Client::makeGetMsg()
 		file.close();
 	}
 	// FIXME: 지우기!!!!!!!!!!!!!!!!!!!!!!!!1
-	exit(1);
+	// exit(1);
 }
 
 std::string Client::autoindex()
@@ -294,18 +294,14 @@ void Client::parseHeader(const std::string &line)
 	std::string value = line.substr(headers[0].size() + 1);
 	ft_trim(value, " \t");
 	this->_request.insertToHeader(headers[0], value);
-	
-	// Chunked인지 아닌지 체크용 로직!
-	if (!headers[0].compare("Content-Length"))
-		this->_content_length_left = ft_atoi(this->_request.getHeaderValue("Content-Length"));
 }
 
 /**
- * Client::setConfig
+ * Client::setClientResReady
  * @brief  RECV_HEADER가 끝난 이후, Host와 Port를 기반으로 올바른 Config 인스턴스 연결
  * @param  {const ConfigGroup} group : Config 벡터를 가져올 ConfigGroup 인스턴스
  */
-void Client::setConfig(ConfigGroup &group)
+void Client::setClientResReady(ConfigGroup &group)
 {
 	std::string host = this->_request.getHeaderValue("Host");
 
@@ -358,7 +354,7 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 		else
 		{
 			tmp.erase(tmp[pos - 1] == '\r' ? pos - 1 : pos);
-			this->_content_length_left -= pos;
+			this->_content_length_left -= (pos + 1);
 		}
 		this->_request.getBody().push_back(tmp);
 		if (this->_content_length_left <= 0)
@@ -438,8 +434,10 @@ void Client::parseBuffer(char *buff, int len)
 	this->_buffer.append(buff, len);
 	if (this->_sock_status == INITIALIZE)
 		this->_sock_status = RECV_START_LINE;
-	while ((pos = this->_buffer.find('\n')) != std::string::npos)
+	while (!this->_buffer.empty())
 	{
+		if ((pos = this->_buffer.find('\n')) == std::string::npos)
+			pos = this->_buffer.length();
 		if (this->_sock_status == RECV_BODY)
 		{
 			tmp = this->_buffer.substr(0, pos + 1);
@@ -464,13 +462,19 @@ void Client::parseBuffer(char *buff, int len)
 				if (tmp.size() == 0)
 				{
 					this->_sock_status = RECV_BODY;
-					this->_proc_status = CREATING;
+					this->_proc_status = PROC_READY;
+
+					// Chunked인지 아닌지 체크용 로직!
+					std::string content_length_str = this->_request.getHeaderValue("Content-Length");
+					if (!content_length_str.empty())
+						this->_content_length_left = ft_atoi(content_length_str);
 				}
 				else
 					this->parseHeader(tmp);
 			}
 		}
-		this->_buffer.erase(0, pos + 1);
+		if (pos != this->_buffer.length())
+			this->_buffer.erase(0, pos + 1);
 	}
 }
 

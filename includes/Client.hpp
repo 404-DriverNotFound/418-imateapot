@@ -31,6 +31,7 @@ enum e_sock_status
 enum e_proc_status
 {
 	PROC_INITIALIZE,
+	PROC_READY,
 	CREATING,
 	SENDING
 };
@@ -74,7 +75,7 @@ class Client
 
 		void parseStartLine(const std::string &);
 		void parseHeader(const std::string &);
-		void setConfig(ConfigGroup &group);
+		void setClientResReady(ConfigGroup &group);
 		int	parseBody(std::string &, size_t);
 
 		void makeMsg();

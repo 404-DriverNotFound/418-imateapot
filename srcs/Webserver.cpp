@@ -130,15 +130,12 @@ void Webserver::readRequest(Client &client)
 
 void Webserver::handleResponse(Client &client)
 {
+	if (client.getProcStatus() == PROC_READY)
+		client.setClientResReady(_configs);
 	if (client.getProcStatus() == CREATING)
-	{
-		client.setConfig(_configs);
 		client.makeMsg();
-	}
-		// create
 	else if (client.getProcStatus() == SENDING)
 		;
-		// write
 }
 
 void Webserver::selectErrorHandling(std::vector<int>& err_index)
