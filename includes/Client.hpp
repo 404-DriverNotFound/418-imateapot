@@ -59,7 +59,6 @@ class Client
 
 		void makeFilePath();
 		void checkFilePath();
-		void makeStatus(uint16_t status);
 		std::string makeContentLocation();
 
 		void makeHeadMsg();
@@ -83,16 +82,14 @@ class Client
 
 		void parseBuffer(char *buff, int len);
 
+		void makeBasicHeader();
+		void makeErrorStatus(uint16_t status);
+
 		int				getFd();
 		e_sock_status	getSockStatus();
 		e_proc_status	getProcStatus();
 
 		class SocketAcceptException: public std::exception
-		{
-			virtual const char *what() const throw();
-		};
-
-		class RequestFormatException: public std::exception
 		{
 			virtual const char *what() const throw();
 		};

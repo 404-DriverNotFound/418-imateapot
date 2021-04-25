@@ -24,7 +24,7 @@ class Webserver
 		void readRequest(Client &client);
 		void handleResponse(Client &client);
 
-		void selectErrorHandling(std::vector<int>& err_index);
+		void handleHttpError(std::map<int, int>& err_index, bool is_request);
 
 	public:
 		Webserver(const std::string &path, uint32_t max_connection);

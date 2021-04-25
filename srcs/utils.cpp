@@ -130,5 +130,5 @@ std::string getCurrentTime()
 {
     struct timeval time;
     gettimeofday(&time, NULL);
-	return getHTTPTimeFormat(time.tv_sec);
+	return getHttpTimeFormat(time.tv_sec);
 }

@@ -38,20 +38,17 @@ void Client::checkFilePath()
 		case EFAULT:
 		case ENOENT:
 		case ENOTDIR:
-			this->makeStatus(404);
-			break;
+			throw 404;
 		
 		default:
-			this->makeStatus(503);
-			break;
+			throw 503;
 		}
 		return ;
 	}
 
 	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
 	{
-		this->makeStatus(200);
-		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtime);
+		std::string last_modified = getHttpTimeFormat(path_stat.st_mtime);
 		std::cout << last_modified << std::endl;
 		this->_response.insertToHeader("Last-modified", last_modified);
 		return ;
@@ -60,52 +57,18 @@ void Client::checkFilePath()
 	std::string root = config.root;
 
 	if (config.autoindex) // if autoindex is on
-	{
-		this->makeStatus(200);
 		return ;
-	}
 
 	// if autoindex is off
 	if (this->_file_path != root) // if not in root
-	{
-		this->makeStatus(404);
-		return ;
-	}
+		throw 404;
+
 	// if in root
 	int fd;
 	if ((fd = open(config.index.c_str(), O_RDONLY)) == -1)
-	{
-		this->makeStatus(404);
-		return ;
-	}
+		throw 404;
 	close(fd);
 	this->_file_path = config.index;
-	this->makeStatus(200);
-}
-
-/**
- * Client::makeStatus
- * response에 status code를 부여.
- * @param  {int} status : 부여하고자 하는 status code.
- */
-void Client::makeStatus(uint16_t status)
-{
-	StartLineRes &start_line = this->_response.getStartLine();
-	Config &config = *this->_config_location;
-
-	start_line.status_code = status;
-
-	if (start_line.status_code >= 400)
-	{
-		int fd;
-		if ((fd = open(config.error_page.c_str(), O_RDONLY)) == -1)
-		{
-			this->_file_path = "";
-			return ;
-		}
-		close(fd);
-		this->_file_path = config.error_page;
-	}
 }
 
 /**
@@ -152,9 +115,6 @@ void Client::makeHeadMsg()
 	this->_response.insertToHeader("Content-Location", content_location);
 	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Transfer-Encoding", "chunked");
-	/**
-	 * TODO: retry-after를 exception 발생했을 시 (503 보낼 때)
-	 */
 }
 
 void Client::makeGetMsg()
@@ -177,7 +137,7 @@ void Client::makeGetMsg()
 	// read
 	if (this->_config_location->autoindex == false)
 	{
-		file.open(this->_file_path.c_str(), O_RDONLY);
+		file.open(this->_file_path.c_str());
 		while (!file.eof())
 		{
 			getline(file, line);
@@ -259,7 +219,7 @@ void Client::parseStartLine(const std::string &line)
 	std::vector<std::string> split = ft_split(line, ' '); // method, path, protocol
 	int method_num = methodToNum(split[0]);
 	if (method_num < 0)
-		throw Client::RequestFormatException();
+		throw 400;
 	start_line.method = static_cast<e_method>(method_num);
 
 	std::vector<std::string> split_path = ft_split(split[1], '/');
@@ -276,7 +236,7 @@ void Client::parseStartLine(const std::string &line)
 		start_line.query_string = split_query[1];
 
 	if (split[2].find("HTTP/") == std::string::npos) // if protocol is not HTTP
-		throw Client::RequestFormatException();
+		throw 400;
 	start_line.protocol = split[2];
 }
 
@@ -378,26 +338,27 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 	return PARSE_BODY_LEFT;
 }
 
+void Client::makeBasicHeader()
+{
+	StartLineRes &start_line = this->_response.getStartLine();
+
+	start_line.protocol = "HTTP/1.1";
+	this->_response.insertToHeader("Server", "418-IAmATeapot");
+	this->_response.insertToHeader("Date", getCurrentTime());
+}
+
 /**
  * Client::makeMsg
  *
  */
 void Client::makeMsg()
 {
-	StartLineRes &res_start_line = this->_response.getStartLine();
-	StartLineReq &req_start_line = this->_request.getStartLine();
+	StartLineReq &start_line = this->_request.getStartLine();
 	
-	std::cout << req_start_line << std::endl;
+	std::cout << start_line << std::endl;
+	this->makeBasicHeader();
 
-	res_start_line.protocol = "HTTP/1.1";
-	this->_response.insertToHeader("Server", "418-IAmATeapot");
-	this->_response.insertToHeader("Date", getCurrentTime());
-	this->_response.insertToHeader("Allow", makeMethodList(this->_config_location->method));
-	/**
-	 * TODO: config에 없는 method가 들어왔을 때에 대한 response 처리
-	 * (405 Method Not Allowed)
-	 */
-	switch (req_start_line.method)
+	switch (start_line.method)
 	{
 	case HEAD:
 		this->makeHeadMsg();
@@ -478,6 +439,62 @@ void Client::parseBuffer(char *buff, int len)
 	}
 }
 
+/**
+ * Client::makeStatus
+ * response에 status code를 부여.
+ * @param  {int} status : 부여하고자 하는 status code.
+ */
+void Client::makeErrorStatus(uint16_t status)
+{
+	StartLineRes &start_line = this->_response.getStartLine();
+	Config &config = *this->_config_location;
+	int fd;
+	
+	start_line.status_code = status;
+
+	/**
+	 * TODO: 408(Request Timeout) 
+	 */
+	switch (status)
+	{
+	case 400:
+	case 403:
+	case 404:
+	case 431:
+	case 505:
+		break ;
+		// 위 status code에는 헤더를 추가할 필요가 없음.
+
+	case 413:
+	case 503:
+		this->_response.insertToHeader("Retry-After", "120");
+		break ;
+	
+	case 401:
+		this->_response.insertToHeader("WWW-Authenticate", "Basic");
+		break ;
+	
+	case 405:
+		this->_response.insertToHeader("Allow", makeMethodList(this->_config_location->method));
+		break ;
+
+	case 418:
+		std::cerr << "☕ TEA-POT! ☕" << std::endl;
+		break;
+	
+	default:
+		break ;
+	}
+
+	if ((fd = open(config.error_page.c_str(), O_RDONLY)) == -1)
+	{
+		this->_file_path = "";
+		return ;
+	}
+	close(fd);
+	this->_file_path = config.error_page;
+}
+
 int Client::getFd()
 {
 	return this->_fd;
@@ -496,9 +513,4 @@ e_proc_status Client::getProcStatus()
 const char *Client::SocketAcceptException::what() const throw()
 {
 	return ("SocketAcceptException: accept error!");
-}
-
-const char *Client::RequestFormatException::what() const throw()
-{
-	return ("RequestFormatException: Invalid Request!");
 }

@@ -18,7 +18,6 @@ unsigned long	ft_unsigned_hextol(const std::string &str);
 std::string		getCurrentTime();
 std::string 	getHTTPTimeFormat(time_t time);
 
-
 #ifndef FT_FD_SETSIZE
 #define FT_FD_SETSIZE 256
 #endif

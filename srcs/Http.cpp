@@ -31,6 +31,8 @@ std::deque<std::string> &Http::getBody()
 	return (this->_body);
 }
 
+StartLineRes::StartLineRes() : status_code(200) {}
+
 /**
  * start_line Getter for request
  *

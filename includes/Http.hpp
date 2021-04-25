@@ -21,6 +21,7 @@ struct StartLineReq : public StartLine
 struct StartLineRes : public StartLine
 {
 	uint16_t		status_code;
+	StartLineRes();
 };
 
 class Http
