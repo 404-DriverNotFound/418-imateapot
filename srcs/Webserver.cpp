@@ -67,7 +67,8 @@ void Webserver::startServer()
         
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
-				// TODO: client 상태에 따라 read하지 않고 continue;
+				if (this->_clients[i].getSockStatus() > RECV_BODY)
+					continue;
 				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_read)))
 				{
 					try
@@ -127,15 +128,12 @@ void Webserver::readRequest(Client &client)
 
 void Webserver::handleResponse(Client &client)
 {
+	if (client.getProcStatus() == PROC_READY)
+		client.setClientResReady(_configs);
 	if (client.getProcStatus() == CREATING)
-	{
-		client.setConfig(this->_configs);
 		client.makeMsg();
-	}
-		// create
 	else if (client.getProcStatus() == SENDING)
 		;
-		// write
 }
 
 void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)

@@ -13,7 +13,6 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <cstdlib>
 
 #ifdef __linux__
 	#include <stdint.h>

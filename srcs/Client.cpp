@@ -19,10 +19,6 @@ void Client::makeFilePath()
 	}
 	else if (path.length() > 1)
 		this->_file_path.append(path);
-	/**
-	 * std::cout << "path: " << this->_file_path << std::endl;
-	 * 일단 테스트용으로 남겨둬봅니다.
-	*/
 }
 
 /**
@@ -51,7 +47,7 @@ void Client::checkFilePath()
 
 	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
 	{
-		std::string last_modified = getHttpTimeFormat(path_stat.st_mtime);
+		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtime);
 		std::cout << last_modified << std::endl;
 		this->_response.insertToHeader("Last-modified", last_modified);
 		return ;
@@ -112,7 +108,7 @@ void Client::makeHeadMsg()
 	std::cout << "code: " << (unsigned int)start_line.status_code << std::endl;
 	std::cout << "path: " << this->_file_path << std::endl;
 	std::cout << "contentLocation: " << content_location << std::endl;
-	exit(1); // FIXME: 지울 것
+	// exit(1); // FIXME: 지울 것
 
 	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Location", content_location);
@@ -126,7 +122,6 @@ void Client::makeGetMsg()
 	// TODO: body를 encoding 없이 raw로 push해주기
 	std::ifstream file;
 	struct stat info;
-	const uint8_t* body;
 	std::string line;
 
 	stat(this->_file_path.c_str(), &info);
@@ -135,9 +130,7 @@ void Client::makeGetMsg()
 	if (S_ISDIR(info.st_mode) && this->_config_location->autoindex == true)
 	{
 		line = this->autoindex();
-		body = reinterpret_cast<const uint8_t *>(line.c_str());
-		// TODO: deque에 push_back이 제대로 들어가는지 잘 모르겠음.. 확인해야함..!
-		this->_response.getBody().push_back(*body);
+		this->_response.getBody().push_back(line);
 	}
 
 	// read
@@ -147,14 +140,12 @@ void Client::makeGetMsg()
 		while (!file.eof())
 		{
 			getline(file, line);
-			body = reinterpret_cast<const uint8_t *>(line.c_str());
-			// TODO: deque에 push_back이 제대로 들어가는지 잘 모르겠음.. 확인해야함..!
-			this->_response.getBody().push_back(*body);
+			this->_response.getBody().push_back(line);
 		}
 		file.close();
 	}
 	// FIXME: 지우기!!!!!!!!!!!!!!!!!!!!!!!!1
-	exit(1);
+	// exit(1);
 }
 
 std::string Client::autoindex()
@@ -201,6 +192,8 @@ void Client::makePostMsg()
  */
 Client::Client(Socket &socket):
 	_port(socket.getPort()),
+	_content_length_left(EMPTY_CONTENT_LENGTH),
+	_chunked_len(CHUNKED_READY),
 	_sock_status(INITIALIZE),
 	_proc_status(PROC_INITIALIZE),
 	_file_path(),
@@ -260,11 +253,11 @@ void Client::parseHeader(const std::string &line)
 }
 
 /**
- * Client::setConfig
+ * Client::setClientResReady
  * @brief  RECV_HEADER가 끝난 이후, Host와 Port를 기반으로 올바른 Config 인스턴스 연결
  * @param  {const ConfigGroup} group : Config 벡터를 가져올 ConfigGroup 인스턴스
  */
-void Client::setConfig(ConfigGroup &group)
+void Client::setClientResReady(ConfigGroup &group)
 {
 	std::string host = this->_request.getHeaderValue("Host");
 
@@ -297,6 +290,51 @@ void Client::setConfig(ConfigGroup &group)
 		}
 		return;
 	}
+}
+/**
+ * Client::parseBody
+ * @brief  request body 파트를 파싱하는 함수
+ * @param  {std::string} tmp : 클라이언트를 통해 들어온 버퍼
+ * @param  {size_t} pos      : 버퍼 스트링의 마지막 인덱스 (~= 버퍼의 길이)
+ * @return {int}             : body의 수신 종료 상태를 알려주는 상태 코드
+ */
+int	Client::parseBody(std::string &tmp, size_t pos)
+{
+	if (this->_content_length_left != EMPTY_CONTENT_LENGTH)
+	{
+		if (static_cast<int>(tmp.length()) > this->_content_length_left)
+		{
+			tmp.erase(this->_content_length_left);
+			this->_content_length_left = 0;
+		}
+		else
+		{
+			if (tmp[pos] == '\n')
+				tmp.erase(tmp[pos - 1] == '\r' ? pos - 1 : pos);
+			this->_content_length_left -= (pos + 1);
+		}
+		this->_request.getBody().push_back(tmp);
+		if (this->_content_length_left <= 0)
+		{
+			return PARSE_BODY_END;
+		}
+	}
+	else if (this->_chunked_len == CHUNKED_READY)
+	{
+		this->_chunked_len = static_cast<int>(ft_unsigned_hextol(tmp));
+		if (this->_chunked_len == 0)
+			return PARSE_BODY_END;
+	}
+	else
+	{
+		if (static_cast<int>(tmp.length()) < this->_chunked_len)
+			tmp.erase(this->_chunked_len);
+		this->_request.getBody().push_back(tmp);
+		this->_chunked_len -= tmp.length();
+		if (this->_chunked_len <= 0)
+			this->_chunked_len = CHUNKED_READY;
+	}
+	return PARSE_BODY_LEFT;
 }
 
 void Client::makeBasicHeader()
@@ -360,38 +398,57 @@ void Client::makeMsg()
  */
 void Client::parseBuffer(char *buff, int len)
 {
+	std::string tmp;
 	size_t pos;
 
+	// 이미 모두 다 받았을때 입력된 내용 버리기
+	if (this->_sock_status >= RECV_END)
+		return ;
+
 	this->_buffer.append(buff, len);
-	/**
-	 * TODO: recvBody 구현
-	 * 		 Transfer-encoding 에 따른 body parsing 어떻게 할지
-	 */
 	if (this->_sock_status == INITIALIZE)
 		this->_sock_status = RECV_START_LINE;
-	while ((pos = this->_buffer.find('\n')) != std::string::npos)
+	while (!this->_buffer.empty())
 	{
-		std::string tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
-		if (this->_sock_status == RECV_START_LINE)
+		if ((pos = this->_buffer.find('\n')) == std::string::npos)
+			pos = this->_buffer.length();
+		if (this->_sock_status == RECV_BODY)
 		{
-			this->parseStartLine(tmp);
-			this->_sock_status = RECV_HEADER;
-		}
-		else if (this->_sock_status == RECV_HEADER)
-		{
-			if (tmp.size() == 0)
+			tmp = this->_buffer.substr(0, pos + 1);
+			if (this->parseBody(tmp, pos) == PARSE_BODY_END)
 			{
-				this->_sock_status = RECV_BODY;
-				this->_proc_status = CREATING;
+				// 받는 과정 끝났을 때!
+				this->_sock_status = RECV_END;
+				this->_buffer.erase(0);
+				return ;
 			}
-			else
-				this->parseHeader(tmp);
 		}
-		else if (this->_sock_status == RECV_BODY)
+		else
 		{
-			// TODO: body 들어오는 경우 test 필요!!
+			tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
+			if (this->_sock_status == RECV_START_LINE)
+			{
+				this->parseStartLine(tmp);
+				this->_sock_status = RECV_HEADER;
+			}
+			else if (this->_sock_status == RECV_HEADER)
+			{
+				if (tmp.size() == 0)
+				{
+					this->_sock_status = RECV_BODY;
+					this->_proc_status = PROC_READY;
+
+					// Chunked인지 아닌지 체크용 로직!
+					std::string content_length_str = this->_request.getHeaderValue("Content-Length");
+					if (!content_length_str.empty())
+						this->_content_length_left = ft_atoi(content_length_str);
+				}
+				else
+					this->parseHeader(tmp);
+			}
 		}
-		this->_buffer.erase(0, pos + 1);
+		if (pos != this->_buffer.length())
+			this->_buffer.erase(0, pos + 1);
 	}
 }
 
@@ -454,6 +511,11 @@ void Client::makeErrorStatus(uint16_t status)
 int Client::getFd()
 {
 	return this->_fd;
+}
+
+e_sock_status Client::getSockStatus()
+{
+	return this->_sock_status;
 }
 
 e_proc_status Client::getProcStatus()
