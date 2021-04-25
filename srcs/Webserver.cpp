@@ -63,7 +63,7 @@ void Webserver::startServer()
 					FT_FD_SET(created.getFd(), &(this->_fd_read));
 					FT_FD_SET(created.getFd(), &(this->_fd_write));
 				}
-			std::vector<int> err_index;
+			std::map<int, int> error_info;
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
 				// TODO: client 상태에 따라 read하지 않고 continue;

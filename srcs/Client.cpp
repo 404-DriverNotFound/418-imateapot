@@ -144,7 +144,7 @@ void Client::makeGetMsg()
 	// read
 	if (this->_config_location->autoindex == false)
 	{
-		file.open(this->_file_path.c_str(), O_RDONLY);
+		file.open(this->_file_path.c_str());
 		while (!file.eof())
 		{
 			getline(file, line);
