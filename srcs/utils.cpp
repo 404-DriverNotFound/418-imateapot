@@ -63,7 +63,7 @@ void ft_trim(std::string &str, const std::string cut)
 		str.clear();
 }
 
-std::string getHTTPTimeFormat(time_t time)
+std::string getHttpTimeFormat(time_t time)
 {
 	char s[150];
     struct tm *tm_time = std::gmtime(&time);
@@ -76,5 +76,5 @@ std::string getCurrentTime()
 {
     struct timeval time;
     gettimeofday(&time, NULL);
-	return getHTTPTimeFormat(time.tv_sec);
+	return getHttpTimeFormat(time.tv_sec);
 }

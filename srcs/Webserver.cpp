@@ -63,7 +63,7 @@ void Webserver::startServer()
 					FT_FD_SET(created.getFd(), &(this->_fd_read));
 					FT_FD_SET(created.getFd(), &(this->_fd_write));
 				}
-			std::vector<int> err_index;
+			std::map<int, int> error_info;
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
 				// TODO: client 상태에 따라 read하지 않고 continue;
@@ -73,14 +73,13 @@ void Webserver::startServer()
 					{
 						this->readRequest(this->_clients[i]);
 					}
-					catch(const std::exception& e)
+					catch(int error_status)
 					{
-						std::cerr << e.what() << '\n';
-						err_index.push_back(i);
+						error_info.insert(std::make_pair<int, int>(i, error_status));
 					}
 				}
 			}
-			this->selectErrorHandling(err_index);
+			this->handleHttpError(error_info, true);
 
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
@@ -92,14 +91,13 @@ void Webserver::startServer()
 					{
 						this->handleResponse(this->_clients[i]);
 					}
-					catch(const std::exception& e)
+					catch (int error_status)
 					{
-						std::cerr << e.what() << '\n';
-						err_index.push_back(i);
+						error_info.insert(std::make_pair<int, int>(i, error_status));
 					}
 				}
 			}
-			this->selectErrorHandling(err_index);
+			this->handleHttpError(error_info, false);
 		}
 	}
 }
@@ -116,7 +114,7 @@ void Webserver::readRequest(Client &client)
 
 	len = read(client.getFd(), buff, READ_BUFFER);
 	if (len < 0)
-		throw Webserver::SocketReadException();
+		throw 503;
 	if (len == 0)
 	{
 		// TODO: 정상 종료되었을때 response 보내고 close하기!!
@@ -139,18 +137,25 @@ void Webserver::handleResponse(Client &client)
 		// write
 }
 
-void Webserver::selectErrorHandling(std::vector<int>& err_index)
+void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)
 {
-	for (int i = err_index.size() - 1; i >= 0; i--)
+	std::map<int, int>::reverse_iterator rite = error_info.rend();
+
+	for (std::map<int, int>::reverse_iterator rit = error_info.rbegin(); rit != rite; rit++) 
 	{
-		std::vector<Client>::iterator client = this->_clients.begin() + err_index[i];
-		// TODO: 503 response
+		std::vector<Client>::iterator client = this->_clients.begin() + rit->first;
+
+		if (is_request)
+			client->makeBasicHeader();
+
+		client->makeErrorStatus(rit->second);
+		// TODO: sendMsg 해주고 종료해야 함
 		close(client->getFd());
 		FT_FD_CLR(client->getFd(), &(this->_fd_read));
 		FT_FD_CLR(client->getFd(), &(this->_fd_write));
 		this->_clients.erase(client);
 	}
-	err_index.clear();
+	error_info.clear();
 }
 
 const char *Webserver::SelectException::what() const throw()
