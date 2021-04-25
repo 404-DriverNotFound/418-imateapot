@@ -70,14 +70,14 @@ void ft_trim(std::string &str, const std::string cut)
  */
 int	ft_atoi(const std::string &str)
 {
-	unsigned long long result = 0;
+	long long result = 0;
 	int minus_flag = 1, index = 0;
 
 	if (!str.empty() && (str[index] == '+' || str[index] == '-'))
 	{
-		index++;
 		if (str[index] == '-')
 			minus_flag = -1;
+		index++;
 	}
 	while ('0' <= str[index] && str[index] <= '9')
 	{

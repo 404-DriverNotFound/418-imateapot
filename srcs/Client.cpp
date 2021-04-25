@@ -19,10 +19,6 @@ void Client::makeFilePath()
 	}
 	else if (path.length() > 1)
 		this->_file_path.append(path);
-	/**
-	 * std::cout << "path: " << this->_file_path  << std::endl;
-	 * 일단 테스트용으로 남겨둬봅니다.
-	*/
 }
 
 /**
@@ -343,12 +339,18 @@ void Client::setConfig(ConfigGroup &group)
 		return;
 	}
 }
-
+/**
+ * Client::parseBody
+ * @brief  request body 파트를 파싱하는 함수
+ * @param  {std::string} tmp : 클라이언트를 통해 들어온 버퍼
+ * @param  {size_t} pos      : 버퍼 스트링의 마지막 인덱스 (~= 버퍼의 길이)
+ * @return {int}             : body의 수신 종료 상태를 알려주는 상태 코드
+ */
 int	Client::parseBody(std::string &tmp, size_t pos)
 {
 	if (this->_content_length_left != EMPTY_CONTENT_LENGTH)
 	{
-		if (tmp.length() < this->_content_length_left)
+		if (tmp.length() > this->_content_length_left)
 		{
 			tmp.erase(this->_content_length_left);
 			this->_content_length_left = 0;
