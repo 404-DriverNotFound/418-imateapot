@@ -43,7 +43,6 @@ void Client::checkFilePath()
 		case ENOENT:
 		case ENOTDIR:
 			throw 404;
-
 		default:
 			throw 503;
 		}
@@ -76,13 +75,12 @@ void Client::checkFilePath()
 }
 
 /**
- * Client::makeContentLocation
+ * Client::makeContentLocation 
  * file_path로부터 Content-Location을 구성.
  * @return {std::string}  : 만들어진 content-location
  */
 std::string Client::makeContentLocation()
 {
-	StartLineRes &start_line = this->_response.getStartLine();
 	Config &config = *this->_config_location;
 	std::string host = this->_request.getHeaderValue("Host");
 
@@ -106,7 +104,6 @@ std::string Client::makeContentLocation()
 void Client::makeHeadMsg()
 {
 	StartLineRes &start_line = this->_response.getStartLine();
-	Config &config = *this->_config_location;
 
 	this->makeFilePath();
 	this->checkFilePath();
@@ -121,9 +118,6 @@ void Client::makeHeadMsg()
 	this->_response.insertToHeader("Content-Location", content_location);
 	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Transfer-Encoding", "chunked");
-	/**
-	 * TODO: retry-after를 exception 발생했을 시 (503 보낼 때)
-	 */
 }
 
 void Client::makeGetMsg()
@@ -149,7 +143,7 @@ void Client::makeGetMsg()
 	// read
 	if (this->_config_location->autoindex == false)
 	{
-		file.open(this->_file_path.c_str(), O_RDONLY);
+		file.open(this->_file_path.c_str());
 		while (!file.eof())
 		{
 			getline(file, line);
@@ -292,7 +286,7 @@ void Client::setConfig(ConfigGroup &group)
 			continue;
 
 		this->_config_location = &*(server_config.rbegin());
-		for (int i = 0; i < server_config.size() - 1; i++)
+		for (unsigned long i = 0; i < server_config.size() - 1; i++)
 		{
 			std::string config_path = server_config[i].location_path;
 			if (!path.compare(0, config_path.size(), config_path))
@@ -429,6 +423,11 @@ void Client::makeErrorStatus(uint16_t status)
 		break ;
 		// 위 status code에는 헤더를 추가할 필요가 없음.
 
+	case 413:
+	case 503:
+		this->_response.insertToHeader("Retry-After", "120");
+		break ;
+	
 	case 401:
 		this->_response.insertToHeader("WWW-Authenticate", "Basic");
 		break ;

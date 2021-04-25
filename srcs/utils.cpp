@@ -10,7 +10,8 @@
 std::vector<std::string> ft_split(std::string str, char delim)
 {
 	std::vector<std::string> answer;
-	int curr = 0, prev = 0;
+	size_t curr = 0;
+	int prev = 0;
 	answer.clear();
 
 	curr = str.find(delim);

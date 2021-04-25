@@ -111,7 +111,7 @@ ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20):
     std::ifstream config_file(path.c_str());
 
     if (!config_file.is_open())
-        throw ConfigGroup::NoConfigFileException();
+		throw ConfigGroup::NoConfigFileException();
 
 	std::string line;
     std::getline(config_file, line);
