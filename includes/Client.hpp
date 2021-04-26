@@ -48,7 +48,8 @@ class Client
 		int				_fd;
 		uint16_t		_port;
 		int				_content_length_left;
-		int				_chunked_len;
+		int				_body_length_left;
+		int				_chunked_length;
 		std::string		_buffer;
 		e_sock_status	_sock_status;
 		e_proc_status	_proc_status;
@@ -66,6 +67,7 @@ class Client
 		std::string autoindex();
 		void makePutMsg();
 		void makePostMsg();
+
 
 		void procCgi();
 
@@ -85,9 +87,12 @@ class Client
 		void makeBasicHeader();
 		void makeErrorStatus(uint16_t status);
 
+		void setBodyLength();
+
 		int				getFd();
 		e_sock_status	getSockStatus();
 		e_proc_status	getProcStatus();
+		void			setProcStatus(e_proc_status status);
 
 		class SocketAcceptException: public std::exception
 		{

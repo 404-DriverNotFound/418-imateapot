@@ -6,7 +6,6 @@
  */
 Config::Config():
 	port(80),
-	head_length(8000),
 	body_length(1000000),
 	autoindex(false),
 	timeout(5)
@@ -27,7 +26,6 @@ Config::Config(const Config &src, std::string &loc_path):
 	port(src.port),
 	index(src.index),
 	error_page(src.error_page),
-	head_length(src.head_length),
 	body_length(src.body_length),
 	autoindex(src.autoindex),
 	timeout(src.timeout),
@@ -71,13 +69,9 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	{
 		this->error_page = this->root + "/" + split[1];
 	}
-	else if (!split[0].compare("head_length"))
-	{
-		this->head_length = ft_atoi(split[1]);
-	}
 	else if (!split[0].compare("body_length"))
 	{
-		this->head_length = ft_atoi(split[1]);
+		this->body_length = ft_atoi(split[1]);
 	}
 	else if (!split[0].compare("autoindex"))
 	{
