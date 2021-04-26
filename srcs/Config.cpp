@@ -32,6 +32,8 @@ Config::Config(const Config &src, std::string &loc_path):
 	autoindex(src.autoindex),
 	timeout(src.timeout),
 	auth(src.auth),
+	cgi_path(src.cgi_path),
+	cgi_extension(src.cgi_extension),
 	server_root(src.server_root),
 	location_path(loc_path)
 {
@@ -47,6 +49,8 @@ Config::Config(const Config &src, std::string &loc_path):
  */
 void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 {
+	if (split.size() < 2)
+		throw ConfigGroup::ConfigFormatException();
 	if (!split[0].compare("server_name"))
 	{
 		if (is_location)
@@ -126,6 +130,14 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 			this->index = this->root + "/index.html";
 			this->error_page = this->root + "/error.html";
 		}
+	}
+	else if (!split[0].compare("cgi_path"))
+	{
+		this->cgi_path = split[1];
+	}
+	else if (!split[0].compare("cgi_extension"))
+	{
+		this->cgi_extension = split[1];
 	}
 	else
 		throw ConfigGroup::ConfigFormatException();
