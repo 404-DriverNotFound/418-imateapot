@@ -65,6 +65,7 @@ class Client
 		void makeGetMsg();
 		std::string autoindex();
 		void makePutMsg();
+		bool isFilePath(const std::string &path);
 		void makePostMsg();
 
 		void procCgi();

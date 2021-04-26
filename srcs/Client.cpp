@@ -127,7 +127,7 @@ void Client::makeGetMsg()
 	stat(this->_file_path.c_str(), &info);
 
 	// autoindex
-	if (S_ISDIR(info.st_mode) && this->_config_location->autoindex == true)
+	if (isDirPath(_file_path) && this->_config_location->autoindex == true)
 	{
 		line = this->autoindex();
 		this->_response.getBody().push_back(line);
@@ -177,7 +177,30 @@ std::string Client::autoindex()
 
 void Client::makePutMsg()
 {
-	// TODO: 보류
+	std::ofstream file;
+	std::deque<std::string> &content = this->_request.getBody();
+	std::string res;
+
+	this->makeFilePath();
+
+	if (isFilePath(_file_path))
+	{
+		file.open(_file_path.c_str());
+		if (file.is_open() == false)
+			throw 403;
+		this->_response.getStartLine().status_code = 204;
+	}
+	else
+	{
+		file.open(_file_path.c_str(), std::ofstream::out | std::ofstream::trunc);
+		if (file.is_open() == false)
+			throw 403;
+		this->_response.getStartLine().status_code = 201;
+	}
+
+	for (unsigned int i = 0; i < content.size(); i++)
+		file << content[i] << "\r\n";
+	file.close();
 }
 
 void Client::makePostMsg()

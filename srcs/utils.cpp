@@ -132,3 +132,33 @@ std::string getCurrentTime()
     gettimeofday(&time, NULL);
 	return getHTTPTimeFormat(time.tv_sec);
 }
+
+bool isFilePath(const std::string &path)
+{
+	struct stat info;
+	
+	if (stat(path.c_str(), &info) == 0)
+	{
+		if (S_ISREG(info.st_mode))
+			return 1;
+		else
+			return 0;
+	}
+	else
+		return 0;
+}
+
+bool isDirPath(const std::string &path)
+{
+	struct stat info;
+
+	if (stat(path.c_str(), &info) == 0)
+	{
+		if (S_ISDIR(info.st_mode))
+			return 1;
+		else 
+			return 0;
+	}
+	else
+		return 0;
+}

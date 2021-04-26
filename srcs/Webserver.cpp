@@ -157,6 +157,21 @@ void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)
 	error_info.clear();
 }
 
+fd_set &Webserver::getFdRead()
+{
+	return this->_fd_read;
+}
+
+fd_set &Webserver::getFdWrite()
+{
+	return this->_fd_write;
+}
+
+fd_set &Webserver::getFdException()
+{
+	return this->_fd_exception;
+}
+
 const char *Webserver::SelectException::what() const throw()
 {
 	return "SelectException: fail to run select!";
