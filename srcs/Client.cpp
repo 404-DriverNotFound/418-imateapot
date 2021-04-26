@@ -179,7 +179,6 @@ void Client::makePutMsg()
 {
 	std::ofstream file;
 	std::deque<std::string> &content = this->_request.getBody();
-	std::string res;
 
 	this->makeFilePath();
 
