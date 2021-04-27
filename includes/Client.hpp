@@ -66,7 +66,7 @@ class Client
 		void parseStartLine(const std::string &);
 		void parseHeader(const std::string &);
 		void setClientResReady(ConfigGroup &group);
-		int	parseBody(std::string &, size_t);
+		int	parseBody();
 
 		void makeMsg();
 		void sendMsg();

@@ -150,7 +150,7 @@ void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)
 
 		if (is_request)
 			client->makeBasicHeader();
-
+		std::cout << "ERROR!!!!! " << rit->second << std::endl;
 		client->makeErrorStatus(rit->second);
 		// TODO: sendMsg 해주고 종료해야 함
 		close(client->getFd());
