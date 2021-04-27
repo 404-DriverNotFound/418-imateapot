@@ -85,7 +85,7 @@ void Webserver::startServer()
 
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
-				if (this->_clients[i].getProcStatus() == PROC_INITIALIZE)
+				if (this->_clients[i].getSockStatus() <= RECV_BODY)
 					continue ;
 				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_write)))
 				{
@@ -119,8 +119,7 @@ void Webserver::readRequest(Client &client)
 		throw 503;
 	if (len == 0)
 	{
-		// TODO: 정상 종료되었을때 response 보내고 close하기!!
-		std::cout << "END!!!!!\n";
+		//client.parseLastBuffer();
 		return ;
 	}
 	client.parseBuffer(buff, len);
@@ -128,11 +127,16 @@ void Webserver::readRequest(Client &client)
 
 void Webserver::handleResponse(Client &client)
 {
-	if (client.getProcStatus() == PROC_READY)
+	if (client.getSockStatus() == RECV_END)
+	{
 		client.setClientResReady(_configs);
-	if (client.getProcStatus() == CREATING)
-		client.makeMsg();
-	else if (client.getProcStatus() == SENDING)
+		// TODO: 클라이언트 로케이션에 따라 cgi인지 아닌지 구분해 status를 변경해야함.
+		if (client.getSockStatus() == PROC_CGI)
+			;
+		else
+			client.makeMsg();
+	}
+	else if (client.getSockStatus() == SEND_MSG)
 		;
 }
 

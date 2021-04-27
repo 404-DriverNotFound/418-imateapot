@@ -217,7 +217,6 @@ Client::Client(Socket &socket):
 	_content_length_left(EMPTY_CONTENT_LENGTH),
 	_chunked_len(CHUNKED_READY),
 	_sock_status(INITIALIZE),
-	_proc_status(PROC_INITIALIZE),
 	_file_path(),
 	_config_location(NULL)
 {
@@ -284,7 +283,9 @@ void Client::setClientResReady(ConfigGroup &group)
 	std::string host = this->_request.getHeaderValue("Host");
 
 	if (host.size() == 0)
-		return ;
+		throw 400;
+
+	this->_sock_status = MAKE_MSG;
 
 	if (host.find(':') != std::string::npos)
 		host.erase(host.find(':'));
@@ -430,10 +431,8 @@ void Client::parseBuffer(char *buff, int len)
 	this->_buffer.append(buff, len);
 	if (this->_sock_status == INITIALIZE)
 		this->_sock_status = RECV_START_LINE;
-	while (!this->_buffer.empty())
+	while ((pos = this->_buffer.find('\n')) != std::string::npos)
 	{
-		if ((pos = this->_buffer.find('\n')) == std::string::npos)
-			pos = this->_buffer.length();
 		if (this->_sock_status == RECV_BODY)
 		{
 			tmp = this->_buffer.substr(0, pos + 1);
@@ -458,7 +457,6 @@ void Client::parseBuffer(char *buff, int len)
 				if (tmp.size() == 0)
 				{
 					this->_sock_status = RECV_BODY;
-					this->_proc_status = PROC_READY;
 
 					// Chunked인지 아닌지 체크용 로직!
 					std::string content_length_str = this->_request.getHeaderValue("Content-Length");
@@ -469,9 +467,39 @@ void Client::parseBuffer(char *buff, int len)
 					this->parseHeader(tmp);
 			}
 		}
-		if (pos != this->_buffer.length())
-			this->_buffer.erase(0, pos + 1);
+		this->_buffer.erase(0, pos + 1);
 	}
+}
+
+void Client::parseLastBuffer()
+{
+	if (this->_buffer.empty())
+	{
+		this->_sock_status = RECV_END;
+		return ;
+	}
+	if (this->_sock_status == RECV_BODY)
+		this->parseBody(this->_buffer, this->_buffer.length());
+	else
+	{
+		if (this->_buffer[this->_buffer.length() - 1] == '\r')
+			this->_buffer.erase(this->_buffer.length() - 1);
+		if (this->_sock_status == RECV_START_LINE)
+			throw 400;
+		else if (this->_sock_status == RECV_HEADER)
+		{
+			if (this->_buffer.length() == 0)
+			{
+				std::string content_length_str = this->_request.getHeaderValue("Content-Length");
+				if (!content_length_str.empty())
+					this->_content_length_left = ft_atoi(content_length_str);
+			}
+			else
+				throw 400;
+		}
+	}
+	this->_buffer.clear();
+	this->_sock_status = RECV_END;
 }
 
 /**
@@ -538,11 +566,6 @@ int Client::getFd()
 e_sock_status Client::getSockStatus()
 {
 	return this->_sock_status;
-}
-
-e_proc_status Client::getProcStatus()
-{
-	return this->_proc_status;
 }
 
 const char *Client::SocketAcceptException::what() const throw()
