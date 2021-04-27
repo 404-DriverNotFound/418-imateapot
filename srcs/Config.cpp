@@ -60,6 +60,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 		if (is_location)
 			throw ConfigGroup::ConfigFormatException();
 		this->port = ft_atoi(split[1]);
+		if (this->port < 0 || this->port > 65535)
+			throw ConfigGroup::ConfigFormatException();
 	}
 	else if (!split[0].compare("index"))
 	{
@@ -72,6 +74,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	else if (!split[0].compare("body_length"))
 	{
 		this->body_length = ft_atoi(split[1]);
+		if (this->body_length <= 0)
+			throw ConfigGroup::ConfigFormatException();
 	}
 	else if (!split[0].compare("autoindex"))
 	{
@@ -85,6 +89,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	else if (!split[0].compare("timeout"))
 	{
 		this->timeout = ft_atoi(split[1]);
+		if (this->timeout <= 0)
+			throw ConfigGroup::ConfigFormatException();
 	}
 	else if (!split[0].compare("auth"))
 	{
