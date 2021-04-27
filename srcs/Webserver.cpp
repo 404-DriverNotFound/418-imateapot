@@ -129,7 +129,11 @@ void Webserver::readRequest(Client &client)
 void Webserver::handleResponse(Client &client)
 {
 	if (client.getProcStatus() == PROC_READY)
+	{
 		client.setClientResReady(_configs);
+		client.setBodyLength();
+		client.setProcStatus(CREATING);
+	}
 	if (client.getProcStatus() == CREATING)
 		client.makeMsg();
 	else if (client.getProcStatus() == SENDING)

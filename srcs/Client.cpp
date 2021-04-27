@@ -193,7 +193,7 @@ void Client::makePostMsg()
 Client::Client(Socket &socket):
 	_port(socket.getPort()),
 	_content_length_left(EMPTY_CONTENT_LENGTH),
-	_chunked_len(CHUNKED_READY),
+	_chunked_length(CHUNKED_READY),
 	_sock_status(INITIALIZE),
 	_proc_status(PROC_INITIALIZE),
 	_file_path(),
@@ -319,20 +319,25 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 			return PARSE_BODY_END;
 		}
 	}
-	else if (this->_chunked_len == CHUNKED_READY)
+	else if (this->_chunked_length == CHUNKED_READY)
 	{
-		this->_chunked_len = static_cast<int>(ft_unsigned_hextol(tmp));
-		if (this->_chunked_len == 0)
+		this->_chunked_length = static_cast<int>(ft_unsigned_hextol(tmp));
+		if (this->_body_length_left < this->_chunked_length)
+			this->_chunked_length = this->_body_length_left;
+		if (this->_chunked_length == 0)
 			return PARSE_BODY_END;
 	}
 	else
 	{
-		if (static_cast<int>(tmp.length()) < this->_chunked_len)
-			tmp.erase(this->_chunked_len);
+		if (static_cast<int>(tmp.length()) < this->_chunked_length)
+			tmp.erase(this->_chunked_length);
 		this->_request.getBody().push_back(tmp);
-		this->_chunked_len -= tmp.length();
-		if (this->_chunked_len <= 0)
-			this->_chunked_len = CHUNKED_READY;
+		this->_chunked_length -= tmp.length();
+		this->_body_length_left -= tmp.length();
+		if (this->_chunked_length <= 0)
+			this->_chunked_length = CHUNKED_READY;
+		if (_body_length_left <= 0)
+			return PARSE_BODY_END;
 	}
 	return PARSE_BODY_LEFT;
 }
@@ -412,6 +417,7 @@ void Client::parseBuffer(char *buff, int len)
 	{
 		if ((pos = this->_buffer.find('\n')) == std::string::npos)
 			pos = this->_buffer.length();
+
 		if (this->_sock_status == RECV_BODY)
 		{
 			tmp = this->_buffer.substr(0, pos + 1);
@@ -508,6 +514,13 @@ void Client::makeErrorStatus(uint16_t status)
 	this->_file_path = config.error_page;
 }
 
+void Client::setBodyLength()
+{
+	this->_body_length_left = this->_config_location->body_length;
+	if (this->_body_length_left < this->_content_length_left)
+		this->_content_length_left = this->_body_length_left;
+}
+
 int Client::getFd()
 {
 	return this->_fd;
@@ -521,6 +534,11 @@ e_sock_status Client::getSockStatus()
 e_proc_status Client::getProcStatus()
 {
 	return this->_proc_status;
+}
+
+void		Client::setProcStatus(e_proc_status status)
+{
+	this->_proc_status = status;
 }
 
 const char *Client::SocketAcceptException::what() const throw()
