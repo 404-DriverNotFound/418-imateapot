@@ -440,7 +440,7 @@ void Client::parseBuffer(char *buff, int len)
 			{
 				// 받는 과정 끝났을 때!
 				this->_sock_status = RECV_END;
-				this->_buffer.erase(0);
+				this->_buffer.clear();
 				return ;
 			}
 		}
@@ -457,11 +457,15 @@ void Client::parseBuffer(char *buff, int len)
 				if (tmp.size() == 0)
 				{
 					this->_sock_status = RECV_BODY;
-
-					// Chunked인지 아닌지 체크용 로직!
 					std::string content_length_str = this->_request.getHeaderValue("Content-Length");
 					if (!content_length_str.empty())
 						this->_content_length_left = ft_atoi(content_length_str);
+					else if (this->_request.getHeaderValue("Transfer-Encoding").compare("chunked"))
+					{
+						this->_sock_status = RECV_END;
+						this->_buffer.clear();
+						return ;
+					}
 				}
 				else
 					this->parseHeader(tmp);
