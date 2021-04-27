@@ -312,7 +312,6 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 			if (tmp[pos] == '\n')
 				tmp.erase(tmp[pos - 1] == '\r' ? pos - 1 : pos);
 			this->_content_length_left -= (pos + 1);
-			this->_body_length_left -= (pos + 1);
 		}
 		this->_request.getBody().push_back(tmp);
 		if (this->_content_length_left <= 0)
@@ -323,6 +322,8 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 	else if (this->_chunked_length == CHUNKED_READY)
 	{
 		this->_chunked_length = static_cast<int>(ft_unsigned_hextol(tmp));
+		if (this->_body_length_left < this->_chunked_length)
+			this->_chunked_length = this->_body_length_left;
 		if (this->_chunked_length == 0)
 			return PARSE_BODY_END;
 	}
@@ -335,9 +336,9 @@ int	Client::parseBody(std::string &tmp, size_t pos)
 		this->_body_length_left -= tmp.length();
 		if (this->_chunked_length <= 0)
 			this->_chunked_length = CHUNKED_READY;
+		if (_body_length_left <= 0)
+			return PARSE_BODY_END;
 	}
-	if (_body_length_left <= 0)
-		return PARSE_BODY_END;
 	return PARSE_BODY_LEFT;
 }
 
@@ -516,6 +517,8 @@ void Client::makeErrorStatus(uint16_t status)
 void Client::setBodyLength()
 {
 	this->_body_length_left = this->_config_location->body_length;
+	if (this->_body_length_left < this->_content_length_left)
+		this->_content_length_left = this->_body_length_left;
 }
 
 int Client::getFd()
