@@ -338,11 +338,11 @@ int	Client::parseBody()
 	{
 		while (!this->_buffer.empty() && (pos = this->_buffer.find('\n')) != std::string::npos)
 		{
-			if (this->_chunked_len == CHUNKED_READY)
+			if (this->_chunked_length == CHUNKED_READY)
 			{
 				tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
-				this->_chunked_len = static_cast<int>(ft_unsigned_hextol(tmp));
-				if (this->_chunked_len == 0)
+				this->_chunked_length = static_cast<int>(ft_unsigned_hextol(tmp));
+				if (this->_chunked_length == 0)
 					return PARSE_BODY_END;
 				this->_buffer.erase(0, pos + 1);
 			}
@@ -350,17 +350,17 @@ int	Client::parseBody()
 			{
 				tmp = this->_buffer;
 				pos = tmp.length();
-				if (static_cast<int>(pos) > this->_chunked_len)
+				if (static_cast<int>(pos) > this->_chunked_length)
 				{
-					tmp.erase(this->_chunked_len);
-					pos = this->_chunked_len;
+					tmp.erase(this->_chunked_length);
+					pos = this->_chunked_length;
 				}
 				this->_request.getBody() += tmp;
-				this->_chunked_len -= pos;
+				this->_chunked_length -= pos;
 				// FIXME: chunked 형식으로 데이터가 오지 않는 경우 에러가 나지 않을지 확인해야 함.
-				if (this->_chunked_len <= 0)
+				if (this->_chunked_length <= 0)
 				{
-					this->_chunked_len = CHUNKED_READY;
+					this->_chunked_length = CHUNKED_READY;
 					this->_buffer.erase(0, pos + 2);
 				}
 				else
