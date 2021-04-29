@@ -203,6 +203,57 @@ void Client::makePostMsg()
 	// TODO: 보류
 }
 
+char **Client::setEnv()
+{
+	char								**env = 0;
+	std::map<std::string, std::string>	map_env;
+	size_t								pos;
+
+	if (!(this->_request.getHeaderValue("Authorization").empty()))
+	{
+		pos = this->_request.getHeaderValue("Authorization").find(" ");
+		map_env["AUTH_TYPE"] = this->_request.getHeaderValue("Authorization").substr(0, pos);
+		map_env["REMOTE_USER"] = this->_request.getHeaderValue("Authorization").substr(pos + 1);
+		map_env["REMOTE_IDENT"] = this->_request.getHeaderValue("Authorization").substr(pos + 1);
+	}
+
+	map_env["CONTENT_LENGTH"] = ft_itos(this->_request.getBody().size());
+
+	if (!(this->_request.getHeaderValue("Content-Type").empty()))
+		map_env["CONTENT_TYPE"] = this->_request.getHeaderValue("Content-Type");
+
+	map_env["GATEWAY_INTERFACE"] = "CGI/1.1";
+	map_env["PATH_INFO"] = this->_request.getStartLine().path;
+	map_env["PATH_TRANSLATED"] = this->_file_path;
+
+	map_env["QUERY_STRING"];
+	if (!(this->_request.getStartLine().query_string.empty()))
+		map_env["QUERY_STRING"] = this->_request.getStartLine().query_string;
+
+	map_env["REMOTE_ADDR"] = this->_socket->getIp();
+	map_env["REQUEST_METHOD"] = numToMethod(this->_request.getStartLine().method);
+
+	map_env["REQUEST_URI"] = this->_request.getStartLine().path + "?" + this->_request.getStartLine().query_string;
+	map_env["SCRIPT_NAME"] = this->_request.getStartLine().path;
+	map_env["SERVER_NAME"] = _config_location->server_name;
+	map_env["SERVER_PORT"] = _config_location->port;
+	map_env["SERVER_PROTOCOL"] = "HTTP/1.1";
+	map_env["SERVER_SOFTWARE"] = "418-IAmATeapot";
+
+	if (!(env = (char **)malloc(sizeof(char *) * (map_env.size() + 1))))
+		throw 500;
+	std::map<std::string, std::string>::iterator it = map_env.begin();
+	int i = 0;
+	while (it != map_env.end())
+	{
+		env[i] = strdup((it->first + "=" + it->second).c_str());
+		++i;
+		++it;
+	}
+	env[i] = NULL;
+	return (env);
+}
+
 /**
  * Client::Client
  * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
@@ -214,7 +265,8 @@ Client::Client(Socket &socket):
 	_chunked_length(CHUNKED_READY),
 	_sock_status(INITIALIZE),
 	_file_path(),
-	_config_location(NULL)
+	_config_location(NULL),
+	_socket(&socket)
 {
 	sockaddr	tmp;
 	socklen_t	socksize = sizeof(sockaddr_in);
