@@ -137,7 +137,7 @@ void Webserver::handleResponse(Client &client)
 			client.makeMsg();
 	}
 	else if (client.getSockStatus() == SEND_MSG)
-		;
+		client.sendMsg();
 }
 
 void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)

@@ -429,6 +429,11 @@ void Client::makeMsg()
 	}
 }
 
+void Client::sendMsg()
+{
+
+}
+
 /**
  * parseBuffer
  * buffer에 저장된 response를 각 부분(startline/header/body)에 맞게 함수 호출
@@ -542,7 +547,6 @@ void Client::makeErrorStatus(uint16_t status)
 	case 400:
 	case 403:
 	case 404:
-	case 431:
 	case 505:
 		break ;
 		// 위 status code에는 헤더를 추가할 필요가 없음.

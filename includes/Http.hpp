@@ -5,6 +5,7 @@
 
 #include <map>
 #include <deque>
+#include <unistd.h>
 
 struct StartLine
 {
@@ -48,6 +49,9 @@ class HttpResponse : public Http
 	StartLineRes			_start_line;
 
 	public:
+		void sendStartLine(int fd);
+		void sendHeader(int fd);
+		void sendBody(int fd);
 		StartLineRes &getStartLine();
 };
 

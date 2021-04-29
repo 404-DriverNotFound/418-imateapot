@@ -43,6 +43,30 @@ StartLineReq &HttpRequest::getStartLine()
 	return (this->_start_line);
 }
 
+void HttpResponse::sendStartLine(int fd)
+{
+	std::string str;
+
+	str += this->_start_line.protocol;
+	str += " ";
+	str += ft_itos(this->_start_line.status_code);
+	str += " ";
+	str += getStatusStr(this->_start_line.status_code);
+	str += "\r\n";
+
+	write(fd, str.c_str(), str.length());
+}
+
+void HttpResponse::sendHeader(int fd)
+{
+
+}
+
+void HttpResponse::sendBody(int fd)
+{
+
+}
+
 /**
  * start_line Getter for response
  *
