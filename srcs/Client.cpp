@@ -211,7 +211,7 @@ void Client::makePostMsg()
 Client::Client(Socket &socket):
 	_port(socket.getPort()),
 	_content_length_left(EMPTY_CONTENT_LENGTH),
-	_chunked_len(CHUNKED_READY),
+	_chunked_length(CHUNKED_READY),
 	_sock_status(INITIALIZE),
 	_file_path(),
 	_config_location(NULL)
@@ -575,6 +575,13 @@ void Client::makeErrorStatus(uint16_t status)
 	}
 	close(fd);
 	this->_file_path = config.error_page;
+}
+
+void Client::setBodyLength()
+{
+	this->_body_length_left = this->_config_location->body_length;
+	if (this->_body_length_left < this->_content_length_left)
+		this->_content_length_left = this->_body_length_left;
 }
 
 int Client::getFd()

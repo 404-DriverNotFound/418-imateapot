@@ -14,7 +14,6 @@ struct Config
 	uint16_t		port;				// def = 80;
 	std::string		index;				// def = server_root/index.html
 	std::string		error_page;			// def = server_root/error.html
-	uint64_t		head_length;		// def = 8k
 	uint64_t		body_length;		// def = 1M
 	bool			autoindex;			// def = off
 	uint32_t		timeout;			// def = 5s
