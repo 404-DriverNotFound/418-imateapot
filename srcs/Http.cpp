@@ -68,7 +68,6 @@ void HttpResponse::sendHeader(int fd)
 		str += ": ";
 		str += it->second;
 		str += "\r\n";
-		std::cout << it->first << ": " << it->second << std::endl;
 	}
 	str += "\r\n";
 	write(fd, str.c_str(), str.length());
@@ -84,7 +83,6 @@ void HttpResponse::sendBody(int fd)
 
 	write(fd, this->_body.c_str(), this->_body.length());
 	write(fd, "\r\n0\r\n\r\n", 7);
-	std::cout << str << "end" << std::endl;
 }
 
 /**

@@ -117,7 +117,6 @@ void Client::makeHeadMsg()
 void Client::makeGetMsg()
 {
 	this->makeHeadMsg();
-	// TODO: body를 encoding 없이 raw로 push해주기
 	std::ifstream file;
 	struct stat info;
 	std::string line;
@@ -224,12 +223,13 @@ void Client::execCGI()
 	char	**env /* = env 받아오는 함수 */;
 
 	this->makeFilePath();
-	this->checkFilePath();
+	env = this->setEnv();
 	std::cout << "here is cgi" << std::endl;
 
 	args[0] = strdup(this->_config_location->cgi_path.c_str());
-	args[1] = strdup(this->_file_path.c_str());
-	args[2] = NULL;
+	// TODO: 지울지 남겨둘지 arg 상태 보고 결정하기
+//	args[1] = strdup(this->_file_path.c_str());
+	args[1] = NULL;
 
 	if ((tmp_fd = open("./tmp_file", O_WRONLY | O_CREAT, 0666) == -1)
 		|| (pipe(fd) == -1)
@@ -241,10 +241,8 @@ void Client::execCGI()
 		close(fd[1]); // output will go to file. so close fd[1]
 		dup2(fd[0], 0);
 		dup2(tmp_fd, 1);
-		dup2(tmp_fd, 2);
 		ret = execve(args[0], args, env);
 		free(args[0]);
-		free(args[1]);
 		close(fd[0]);
 		exit(ret);
 	}
@@ -257,10 +255,10 @@ void Client::execCGI()
 		if (WIFEXITED(status) == 0)
 			throw 500;
 		free(args[0]);
-		free(args[1]);
 	}
-	while (read(tmp_fd, buf, BUFSIZ) > 0)
+	/*while (read(tmp_fd, buf, BUFSIZ) > 0)
 		std::cout << buf;
+		*/
 	close(tmp_fd);
 	std::cout << "cgi end" << std::endl;
 }
@@ -520,7 +518,6 @@ void Client::makeMsg()
 			throw 403;
 	}
 
-	// TODO: 설정 파일 작동되는지 확인해야함
 	if (!(this->_config_location->method[start_line.method]))
 		throw 405;
 
