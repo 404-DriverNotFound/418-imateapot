@@ -34,6 +34,8 @@ enum e_sock_status
 #define PARSE_BODY_END 0
 #define PARSE_BODY_LEFT 1
 
+#define CLIENT_DONE_STATUS 1000
+
 class Client
 {
 	private:

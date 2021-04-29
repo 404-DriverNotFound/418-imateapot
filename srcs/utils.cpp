@@ -109,13 +109,30 @@ std::string ft_itos(int num)
 	return (str);
 }
 
+std::string ft_ultohex(unsigned long num)
+{
+	std::string str;
+	unsigned long tmp;
+
+	if (num == 0)
+		return ("0");
+	while (num != 0)
+	{
+		tmp = num % 16;
+		tmp = (tmp >= 10 ? tmp + 'A' - 10 : tmp + '0');
+		str = static_cast<char>(tmp) + str;
+		num /= 10;
+	}
+	return (str);
+}
+
 /**
  * ft_atoi
  * @brief  cstdlib의 strtol의 대체함수입니다. 그중 unsigned 16진수에 한정지어 처리합니다.
  * @param  {std::string} str : 16진수 숫자의 문자열
  * @return {int}             : 변환된 숫자
  */
-unsigned long	ft_unsigned_hextol(const std::string &str)
+unsigned long	ft_uhextol(const std::string &str)
 {
 	unsigned long	result = 0;
 	int				index = 0;

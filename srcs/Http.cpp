@@ -78,12 +78,13 @@ void HttpResponse::sendBody(int fd)
 {
 	std::string str;
 
-	str += ft_itos(this->_body.length());
+	str += ft_ultohex(this->_body.length());
 	str += "\r\n";
 	write(fd, str.c_str(), str.length());
 
 	write(fd, this->_body.c_str(), this->_body.length());
 	write(fd, "\r\n0\r\n\r\n", 7);
+	std::cout << str << "end" << std::endl;
 }
 
 /**

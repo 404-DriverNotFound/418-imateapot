@@ -25,6 +25,17 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 	}
 }
 
+Webserver::~Webserver()
+{
+	std::vector<Client>::iterator client_ite = this->_clients.end();
+	for (std::vector<Client>::iterator it = this->_clients.begin(); it != client_ite; it++)
+		close(it->getFd());
+
+	std::vector<Socket>::iterator socket_ite = this->_socks.end();
+	for (std::vector<Socket>::iterator it = this->_socks.begin(); it != socket_ite; it++)
+		close(it->getFd());
+}
+
 /**
  * Webserver::startServer
  * @brief  Webserver 내 Server를 바탕으로 서버를 시작하는 함수. 이 함수에서 프로젝트 유일하게 select가 작동됨.
@@ -32,6 +43,7 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 void Webserver::startServer()
 {
 	fd_set temp_fd_read, temp_fd_write;
+	std::map<int, int> done_info;
 	int state;
 
 	while (1)
@@ -63,7 +75,6 @@ void Webserver::startServer()
 					FT_FD_SET(created.getFd(), &(this->_fd_read));
 					FT_FD_SET(created.getFd(), &(this->_fd_write));
 				}
-			std::map<int, int> error_info;
         
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
@@ -77,11 +88,11 @@ void Webserver::startServer()
 					}
 					catch(int error_status)
 					{
-						error_info.insert(std::make_pair<int, int>(i, error_status));
+						done_info.insert(std::make_pair<int, int>(i, error_status));
 					}
 				}
 			}
-			this->handleHttpError(error_info);
+			this->handleClientDone(done_info);
 
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
@@ -92,14 +103,16 @@ void Webserver::startServer()
 					try
 					{
 						this->handleResponse(this->_clients[i]);
+						if (this->_clients[i].getSockStatus() == SEND_DONE)
+							done_info.insert(std::make_pair<int, int>(i, CLIENT_DONE_STATUS));
 					}
 					catch (int error_status)
 					{
-						error_info.insert(std::make_pair<int, int>(i, error_status));
+						done_info.insert(std::make_pair<int, int>(i, error_status));
 					}
 				}
 			}
-			this->handleHttpError(error_info);
+			this->handleClientDone(done_info);
 		}
 	}
 }
@@ -140,25 +153,27 @@ void Webserver::handleResponse(Client &client)
 		client.sendMsg();
 }
 
-void Webserver::handleHttpError(std::map<int, int>& error_info)
+void Webserver::handleClientDone(std::map<int, int>& done_info)
 {
-	std::map<int, int>::reverse_iterator rite = error_info.rend();
+	std::map<int, int>::reverse_iterator rite = done_info.rend();
 
-	for (std::map<int, int>::reverse_iterator rit = error_info.rbegin(); rit != rite; rit++) 
+	for (std::map<int, int>::reverse_iterator rit = done_info.rbegin(); rit != rite; rit++) 
 	{
 		std::vector<Client>::iterator client = this->_clients.begin() + rit->first;
 
-		client->makeBasicHeader();
-		std::cout << "ERROR!!!!! " << rit->second << std::endl;
-		client->makeErrorStatus(rit->second);
-		
-		client->sendMsg();
-		close(client->getFd());
+		if (rit->second != CLIENT_DONE_STATUS)
+		{
+			client->makeBasicHeader();
+			std::cout << "ERROR!!!!! " << rit->second << std::endl;
+			client->makeErrorStatus(rit->second);
+			client->sendMsg();
+		}
 		FT_FD_CLR(client->getFd(), &(this->_fd_read));
 		FT_FD_CLR(client->getFd(), &(this->_fd_write));
+		close(client->getFd());
 		this->_clients.erase(client);
 	}
-	error_info.clear();
+	done_info.clear();
 }
 
 fd_set &Webserver::getFdRead()

@@ -341,7 +341,7 @@ int	Client::parseBody()
 			if (this->_chunked_length == CHUNKED_READY)
 			{
 				tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
-				this->_chunked_length = static_cast<int>(ft_unsigned_hextol(tmp));
+				this->_chunked_length = static_cast<int>(ft_uhextol(tmp));
 				if (this->_chunked_length == 0)
 					return PARSE_BODY_END;
 				this->_buffer.erase(0, pos + 1);
