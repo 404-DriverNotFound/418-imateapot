@@ -59,12 +59,31 @@ void HttpResponse::sendStartLine(int fd)
 
 void HttpResponse::sendHeader(int fd)
 {
+	std::string str;
 
+	std::map<std::string, std::string>::iterator ite = this->_headers.end();
+	for (std::map<std::string, std::string>::iterator it = this->_headers.begin(); it != ite; it++)
+	{
+		str += it->first;
+		str += ": ";
+		str += it->second;
+		str += "\r\n";
+		std::cout << it->first << ": " << it->second << std::endl;
+	}
+	str += "\r\n";
+	write(fd, str.c_str(), str.length());
 }
 
 void HttpResponse::sendBody(int fd)
 {
+	std::string str;
 
+	str += ft_itos(this->_body.length());
+	str += "\r\n";
+	write(fd, str.c_str(), str.length());
+
+	write(fd, this->_body.c_str(), this->_body.length());
+	write(fd, "\r\n0\r\n\r\n", 7);
 }
 
 /**

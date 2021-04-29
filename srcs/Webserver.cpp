@@ -81,7 +81,7 @@ void Webserver::startServer()
 					}
 				}
 			}
-			this->handleHttpError(error_info, true);
+			this->handleHttpError(error_info);
 
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
@@ -99,7 +99,7 @@ void Webserver::startServer()
 					}
 				}
 			}
-			this->handleHttpError(error_info, false);
+			this->handleHttpError(error_info);
 		}
 	}
 }
@@ -140,7 +140,7 @@ void Webserver::handleResponse(Client &client)
 		client.sendMsg();
 }
 
-void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)
+void Webserver::handleHttpError(std::map<int, int>& error_info)
 {
 	std::map<int, int>::reverse_iterator rite = error_info.rend();
 
@@ -148,11 +148,11 @@ void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)
 	{
 		std::vector<Client>::iterator client = this->_clients.begin() + rit->first;
 
-		if (is_request)
-			client->makeBasicHeader();
+		client->makeBasicHeader();
 		std::cout << "ERROR!!!!! " << rit->second << std::endl;
 		client->makeErrorStatus(rit->second);
-		// TODO: sendMsg 해주고 종료해야 함
+		
+		client->sendMsg();
 		close(client->getFd());
 		FT_FD_CLR(client->getFd(), &(this->_fd_read));
 		FT_FD_CLR(client->getFd(), &(this->_fd_write));
