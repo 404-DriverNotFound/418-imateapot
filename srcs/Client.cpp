@@ -219,7 +219,7 @@ void Client::execCGI()
 	int		fd[2], tmp_fd;
 	pid_t	pid;
 	char	*args[3];
-	char	buf[BUFSIZ];
+//	char	buf[BUFSIZ];
 	char	**env /* = env 받아오는 함수 */;
 
 	this->makeFilePath();
