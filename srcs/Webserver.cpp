@@ -85,7 +85,7 @@ void Webserver::startServer()
 
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
-				if (this->_clients[i].getProcStatus() == PROC_INITIALIZE)
+				if (this->_clients[i].getSockStatus() <= RECV_BODY)
 					continue ;
 				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_write)))
 				{
@@ -119,8 +119,7 @@ void Webserver::readRequest(Client &client)
 		throw 503;
 	if (len == 0)
 	{
-		// TODO: 정상 종료되었을때 response 보내고 close하기!!
-		std::cout << "END!!!!!\n";
+		//client.parseLastBuffer();
 		return ;
 	}
 	client.parseBuffer(buff, len);
@@ -128,15 +127,16 @@ void Webserver::readRequest(Client &client)
 
 void Webserver::handleResponse(Client &client)
 {
-	if (client.getProcStatus() == PROC_READY)
+	if (client.getSockStatus() == RECV_END)
 	{
 		client.setClientResReady(_configs);
-		client.setBodyLength();
-		client.setProcStatus(CREATING);
+		// TODO: 클라이언트 로케이션에 따라 cgi인지 아닌지 구분해 status를 변경해야함.
+		if (client.getSockStatus() == PROC_CGI)
+			;
+		else
+			client.makeMsg();
 	}
-	if (client.getProcStatus() == CREATING)
-		client.makeMsg();
-	else if (client.getProcStatus() == SENDING)
+	else if (client.getSockStatus() == SEND_MSG)
 		;
 }
 
@@ -150,7 +150,7 @@ void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)
 
 		if (is_request)
 			client->makeBasicHeader();
-
+		std::cout << "ERROR!!!!! " << rit->second << std::endl;
 		client->makeErrorStatus(rit->second);
 		// TODO: sendMsg 해주고 종료해야 함
 		close(client->getFd());
@@ -159,6 +159,21 @@ void Webserver::handleHttpError(std::map<int, int>& error_info, bool is_request)
 		this->_clients.erase(client);
 	}
 	error_info.clear();
+}
+
+fd_set &Webserver::getFdRead()
+{
+	return this->_fd_read;
+}
+
+fd_set &Webserver::getFdWrite()
+{
+	return this->_fd_write;
+}
+
+fd_set &Webserver::getFdException()
+{
+	return this->_fd_exception;
 }
 
 const char *Webserver::SelectException::what() const throw()

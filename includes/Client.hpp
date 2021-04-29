@@ -22,18 +22,10 @@ enum e_sock_status
 	RECV_HEADER,
 	RECV_BODY,
 	RECV_END,
-	PROC_CGI,
 	MAKE_MSG,
+	PROC_CGI,
 	SEND_MSG,
 	SEND_DONE
-};
-
-enum e_proc_status
-{
-	PROC_INITIALIZE,
-	PROC_READY,
-	CREATING,
-	SENDING
 };
 
 #define EMPTY_CONTENT_LENGTH -1
@@ -52,7 +44,6 @@ class Client
 		int				_chunked_length;
 		std::string		_buffer;
 		e_sock_status	_sock_status;
-		e_proc_status	_proc_status;
 		HttpRequest		_request;
 		HttpResponse	_response;
 		std::string		_file_path;
@@ -77,12 +68,13 @@ class Client
 		void parseStartLine(const std::string &);
 		void parseHeader(const std::string &);
 		void setClientResReady(ConfigGroup &group);
-		int	parseBody(std::string &, size_t);
+		int	parseBody();
 
 		void makeMsg();
 		void sendMsg();
 
 		void parseBuffer(char *buff, int len);
+		void parseLastBuffer();
 
 		void makeBasicHeader();
 		void makeErrorStatus(uint16_t status);
@@ -91,8 +83,6 @@ class Client
 
 		int				getFd();
 		e_sock_status	getSockStatus();
-		e_proc_status	getProcStatus();
-		void			setProcStatus(e_proc_status status);
 
 		class SocketAcceptException: public std::exception
 		{

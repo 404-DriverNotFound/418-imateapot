@@ -26,7 +26,7 @@ std::string Http::getHeaderValue(const std::string &key)
 	return (*result).second;
 }
 
-std::deque<std::string> &Http::getBody()
+std::string &Http::getBody()
 {
 	return (this->_body);
 }

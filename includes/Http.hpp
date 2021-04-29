@@ -27,12 +27,12 @@ struct StartLineRes : public StartLine
 class Http
 {
 	std::map<std::string, std::string>		_headers;
-	std::deque<std::string>					_body;
+	std::string								_body;
 
 	public:
 		void insertToHeader(const std::string &, const std::string &);
 		std::string getHeaderValue(const std::string &);
-		std::deque<std::string>	 &getBody();
+		std::string &getBody();
 };
 
 class HttpRequest : public Http

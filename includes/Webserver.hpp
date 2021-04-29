@@ -30,6 +30,11 @@ class Webserver
 		Webserver(const std::string &path, uint32_t max_connection);
 		void startServer();
 
+		/*---- getter ----*/
+		fd_set &getFdRead();
+		fd_set &getFdWrite();
+		fd_set &getFdException();
+
 		class SelectException: public std::exception
 		{
 			virtual const char *what() const throw();
