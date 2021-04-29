@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <exception>
 #include <cstring>
+#include <unistd.h>
 #include "utils.hpp"
 
 class Socket

@@ -109,8 +109,8 @@ void Client::makeHeadMsg()
 	std::cout << "path: " << this->_file_path << std::endl;
 	std::cout << "contentLocation: " << content_location << std::endl;
 
-	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Location", content_location);
+	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Transfer-Encoding", "chunked");
 }
@@ -393,7 +393,7 @@ int	Client::parseBody()
 			if (this->_chunked_length == CHUNKED_READY)
 			{
 				tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
-				this->_chunked_length = static_cast<int>(ft_unsigned_hextol(tmp));
+				this->_chunked_length = static_cast<int>(ft_uhextol(tmp));
 				if (this->_chunked_length == 0)
 					return PARSE_BODY_END;
 				this->_buffer.erase(0, pos + 1);
@@ -431,6 +431,9 @@ void Client::makeBasicHeader()
 	start_line.protocol = "HTTP/1.1";
 	this->_response.insertToHeader("Server", "418-IAmATeapot");
 	this->_response.insertToHeader("Date", getCurrentTime());
+	this->_response.insertToHeader("Content-Language", "ko");
+	this->_response.insertToHeader("Content-Type", "text/plain");
+	this->_response.insertToHeader("Transfer-Encoding", "chunked");
 }
 
 /**
@@ -442,6 +445,8 @@ void Client::makeMsg()
 	StartLineReq &start_line = this->_request.getStartLine();
 
 	std::cout << start_line << std::endl;
+
+	this->_sock_status = SEND_MSG;
 
 	if (!this->_config_location->auth.empty())
 	{
@@ -479,6 +484,15 @@ void Client::makeMsg()
 	default:
 		break ;
 	}
+}
+
+void Client::sendMsg()
+{
+	this->_response.sendStartLine(this->_fd);
+	this->_response.sendHeader(this->_fd);
+	if (!this->_response.getBody().empty())
+		this->_response.sendBody(this->_fd);
+	this->_sock_status = SEND_DONE;
 }
 
 /**
@@ -582,6 +596,8 @@ void Client::makeErrorStatus(uint16_t status)
 {
 	StartLineRes &start_line = this->_response.getStartLine();
 	Config &config = *this->_config_location;
+	std::ifstream file;
+	std::string line;
 	int fd;
 
 	start_line.status_code = status;
@@ -594,7 +610,6 @@ void Client::makeErrorStatus(uint16_t status)
 	case 400:
 	case 403:
 	case 404:
-	case 431:
 	case 505:
 		break ;
 		// 위 status code에는 헤더를 추가할 필요가 없음.
@@ -627,6 +642,14 @@ void Client::makeErrorStatus(uint16_t status)
 	}
 	close(fd);
 	this->_file_path = config.error_page;
+
+	file.open(this->_file_path.c_str());
+	while (!file.eof())
+	{
+		getline(file, line);
+		this->_response.getBody() += line;
+	}
+	file.close();
 }
 
 void Client::setBodyLength()
