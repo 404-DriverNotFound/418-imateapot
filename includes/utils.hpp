@@ -3,22 +3,26 @@
 #ifdef __linux__
 	#include <stdint.h>
 #endif
-#include <sstream>
 #include <string>
 #include <vector>
 #include <ctime>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 
 std::vector<std::string> ft_split(std::string str, char delim);
 
 bool			isBlankLine(const std::string &line);
 void			ft_trim(std::string &str, const std::string cut);
 int				ft_atoi(const std::string &str);
-unsigned long	ft_unsigned_hextol(const std::string &str);
+std::string		ft_itos(int num);
+std::string		ft_ultohex(unsigned long num);
+unsigned long	ft_uhextol(const std::string &str);
 std::string		getCurrentTime();
 std::string 	getHTTPTimeFormat(time_t time);
 bool 			isFilePath(const std::string &path);
 bool			isDirPath(const std::string &path);
+std::string		getStatusStr(uint16_t code);
+std::string		ft_inet_ntoa(unsigned int addr);
 
 #ifndef FT_FD_SETSIZE
 #define FT_FD_SETSIZE 256

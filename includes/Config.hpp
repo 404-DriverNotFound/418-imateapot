@@ -5,7 +5,6 @@
 #endif
 #include <string>
 #include <vector>
-#include <cstdlib> // exit() 사용하지 않게 되었을 때 삭제해주세요!
 
 struct Config
 {

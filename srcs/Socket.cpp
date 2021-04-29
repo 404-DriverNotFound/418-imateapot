@@ -13,6 +13,7 @@ Socket::Socket(uint16_t port, uint32_t max_connection): _port(port)
 	this->_sockaddr.sin_family = AF_INET;
 	this->_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	this->_sockaddr.sin_port = htons(this->_port);
+	_ip = ft_inet_ntoa(this->_sockaddr.sin_addr.s_addr);
 
 	if (bind(this->_fd, reinterpret_cast<const sockaddr *>(&(this->_sockaddr)), sizeof(sockaddr)) < 0)
 		throw Socket::BindException();
@@ -29,6 +30,11 @@ int Socket::getFd()
 int Socket::getPort()
 {
 	return this->_port;
+}
+
+std::string Socket::getIp()
+{
+	return this->_ip;
 }
 
 const char *Socket::SocketCreationException::what() const throw()

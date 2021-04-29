@@ -43,6 +43,50 @@ StartLineReq &HttpRequest::getStartLine()
 	return (this->_start_line);
 }
 
+void HttpResponse::sendStartLine(int fd)
+{
+	std::string str;
+
+	str += this->_start_line.protocol;
+	str += " ";
+	str += ft_itos(this->_start_line.status_code);
+	str += " ";
+	str += getStatusStr(this->_start_line.status_code);
+	str += "\r\n";
+
+	write(fd, str.c_str(), str.length());
+}
+
+void HttpResponse::sendHeader(int fd)
+{
+	std::string str;
+
+	std::map<std::string, std::string>::iterator ite = this->_headers.end();
+	for (std::map<std::string, std::string>::iterator it = this->_headers.begin(); it != ite; it++)
+	{
+		str += it->first;
+		str += ": ";
+		str += it->second;
+		str += "\r\n";
+		std::cout << it->first << ": " << it->second << std::endl;
+	}
+	str += "\r\n";
+	write(fd, str.c_str(), str.length());
+}
+
+void HttpResponse::sendBody(int fd)
+{
+	std::string str;
+
+	str += ft_ultohex(this->_body.length());
+	str += "\r\n";
+	write(fd, str.c_str(), str.length());
+
+	write(fd, this->_body.c_str(), this->_body.length());
+	write(fd, "\r\n0\r\n\r\n", 7);
+	std::cout << str << "end" << std::endl;
+}
+
 /**
  * start_line Getter for response
  *

@@ -90,13 +90,49 @@ int	ft_atoi(const std::string &str)
 	return static_cast<int>(result);
 }
 
+std::string ft_itos(int num)
+{
+	std::string str;
+	long long	nbr = (long long)num;
+
+	if (num == 0)
+		return ("0");
+	if (num < 0)
+		nbr *= -1;
+	while (nbr != 0)
+	{
+		str = static_cast<char>((nbr % 10) + 48) + str;
+		nbr /= 10;
+	}
+	if (num < 0)
+		str = "-" + str;
+	return (str);
+}
+
+std::string ft_ultohex(unsigned long num)
+{
+	std::string str;
+	unsigned long tmp;
+
+	if (num == 0)
+		return ("0");
+	while (num != 0)
+	{
+		tmp = num % 16;
+		tmp = (tmp >= 10 ? tmp + 'A' - 10 : tmp + '0');
+		str = static_cast<char>(tmp) + str;
+		num /= 10;
+	}
+	return (str);
+}
+
 /**
  * ft_atoi
  * @brief  cstdlib의 strtol의 대체함수입니다. 그중 unsigned 16진수에 한정지어 처리합니다.
  * @param  {std::string} str : 16진수 숫자의 문자열
  * @return {int}             : 변환된 숫자
  */
-unsigned long	ft_unsigned_hextol(const std::string &str)
+unsigned long	ft_uhextol(const std::string &str)
 {
 	unsigned long	result = 0;
 	int				index = 0;
@@ -161,4 +197,49 @@ bool isDirPath(const std::string &path)
 	}
 	else
 		return 0;
+}
+
+std::string getStatusStr(uint16_t code)
+{
+    switch (code) {
+        case 200:
+            return ("OK");
+        case 201:
+            return ("Created");
+		case 204:
+			return ("No Content");
+        case 400:
+            return ("Bad Request");
+        case 401:
+			return ("Unauthorized");
+		case 403:
+            return ("Forbidden");
+        case 404:
+            return ("Not Found");
+		case 405:
+			return ("Method Not Allowed");
+		case 413:
+			return ("Payload Too Large");
+		case 418:
+			return ("I'm a teapot");
+        case 500:
+            return ("Internal Server Error");
+		case 503:
+			return ("Service Unavailable");
+		case 505:
+			return ("HTTP Version Not Supported");
+    }
+    return ("");
+}
+
+std::string ft_inet_ntoa(unsigned int addr)
+{
+	unsigned int n = addr;
+
+	std::string res = std::to_string(n % 256) + ".";
+	res += std::to_string((n / 256) % 256) + ".";
+	res += std::to_string((n / 256 / 256) % 256) + ".";
+	res += std::to_string(n / 256 / 256 / 256);
+
+	return (res);
 }

@@ -108,8 +108,8 @@ void Client::makeHeadMsg()
 	std::cout << "path: " << this->_file_path << std::endl;
 	std::cout << "contentLocation: " << content_location << std::endl;
 
-	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Location", content_location);
+	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Transfer-Encoding", "chunked");
 }
@@ -265,6 +265,57 @@ void Client::execCGI()
 	std::cout << "cgi end" << std::endl;
 }
 
+char **Client::setEnv()
+{
+	char								**env = 0;
+	std::map<std::string, std::string>	map_env;
+	size_t								pos;
+
+	if (!(this->_request.getHeaderValue("Authorization").empty()))
+	{
+		pos = this->_request.getHeaderValue("Authorization").find(" ");
+		map_env["AUTH_TYPE"] = this->_request.getHeaderValue("Authorization").substr(0, pos);
+		map_env["REMOTE_USER"] = this->_request.getHeaderValue("Authorization").substr(pos + 1);
+		map_env["REMOTE_IDENT"] = this->_request.getHeaderValue("Authorization").substr(pos + 1);
+	}
+
+	map_env["CONTENT_LENGTH"] = ft_itos(this->_request.getBody().size());
+
+	if (!(this->_request.getHeaderValue("Content-Type").empty()))
+		map_env["CONTENT_TYPE"] = this->_request.getHeaderValue("Content-Type");
+
+	map_env["GATEWAY_INTERFACE"] = "CGI/1.1";
+	map_env["PATH_INFO"] = this->_request.getStartLine().path;
+	map_env["PATH_TRANSLATED"] = this->_file_path;
+
+	map_env["QUERY_STRING"];
+	if (!(this->_request.getStartLine().query_string.empty()))
+		map_env["QUERY_STRING"] = this->_request.getStartLine().query_string;
+
+	map_env["REMOTE_ADDR"] = this->_socket->getIp();
+	map_env["REQUEST_METHOD"] = numToMethod(this->_request.getStartLine().method);
+
+	map_env["REQUEST_URI"] = this->_request.getStartLine().path + "?" + this->_request.getStartLine().query_string;
+	map_env["SCRIPT_NAME"] = this->_request.getStartLine().path;
+	map_env["SERVER_NAME"] = _config_location->server_name;
+	map_env["SERVER_PORT"] = _config_location->port;
+	map_env["SERVER_PROTOCOL"] = "HTTP/1.1";
+	map_env["SERVER_SOFTWARE"] = "418-IAmATeapot";
+
+	if (!(env = (char **)malloc(sizeof(char *) * (map_env.size() + 1))))
+		throw 500;
+	std::map<std::string, std::string>::iterator it = map_env.begin();
+	int i = 0;
+	while (it != map_env.end())
+	{
+		env[i] = strdup((it->first + "=" + it->second).c_str());
+		++i;
+		++it;
+	}
+	env[i] = NULL;
+	return (env);
+}
+
 /**
  * Client::Client
  * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
@@ -276,7 +327,8 @@ Client::Client(Socket &socket):
 	_chunked_length(CHUNKED_READY),
 	_sock_status(INITIALIZE),
 	_file_path(),
-	_config_location(NULL)
+	_config_location(NULL),
+	_socket(&socket)
 {
 	sockaddr	tmp;
 	socklen_t	socksize = sizeof(sockaddr_in);
@@ -403,7 +455,7 @@ int	Client::parseBody()
 			if (this->_chunked_length == CHUNKED_READY)
 			{
 				tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
-				this->_chunked_length = static_cast<int>(ft_unsigned_hextol(tmp));
+				this->_chunked_length = static_cast<int>(ft_uhextol(tmp));
 				if (this->_chunked_length == 0)
 					return PARSE_BODY_END;
 				this->_buffer.erase(0, pos + 1);
@@ -441,6 +493,9 @@ void Client::makeBasicHeader()
 	start_line.protocol = "HTTP/1.1";
 	this->_response.insertToHeader("Server", "418-IAmATeapot");
 	this->_response.insertToHeader("Date", getCurrentTime());
+	this->_response.insertToHeader("Content-Language", "ko");
+	this->_response.insertToHeader("Content-Type", "text/plain");
+	this->_response.insertToHeader("Transfer-Encoding", "chunked");
 }
 
 /**
@@ -452,6 +507,8 @@ void Client::makeMsg()
 	StartLineReq &start_line = this->_request.getStartLine();
 
 	std::cout << start_line << std::endl;
+
+	this->_sock_status = SEND_MSG;
 
 	if (!this->_config_location->auth.empty())
 	{
@@ -491,6 +548,15 @@ void Client::makeMsg()
 	default:
 		break ;
 	}
+}
+
+void Client::sendMsg()
+{
+	this->_response.sendStartLine(this->_fd);
+	this->_response.sendHeader(this->_fd);
+	if (!this->_response.getBody().empty())
+		this->_response.sendBody(this->_fd);
+	this->_sock_status = SEND_DONE;
 }
 
 /**
@@ -594,6 +660,8 @@ void Client::makeErrorStatus(uint16_t status)
 {
 	StartLineRes &start_line = this->_response.getStartLine();
 	Config &config = *this->_config_location;
+	std::ifstream file;
+	std::string line;
 	int fd;
 
 	start_line.status_code = status;
@@ -606,7 +674,6 @@ void Client::makeErrorStatus(uint16_t status)
 	case 400:
 	case 403:
 	case 404:
-	case 431:
 	case 505:
 		break ;
 		// 위 status code에는 헤더를 추가할 필요가 없음.
@@ -639,6 +706,14 @@ void Client::makeErrorStatus(uint16_t status)
 	}
 	close(fd);
 	this->_file_path = config.error_page;
+
+	file.open(this->_file_path.c_str());
+	while (!file.eof())
+	{
+		getline(file, line);
+		this->_response.getBody() += line;
+	}
+	file.close();
 }
 
 void Client::setBodyLength()

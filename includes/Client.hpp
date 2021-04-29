@@ -34,6 +34,8 @@ enum e_sock_status
 #define PARSE_BODY_END 0
 #define PARSE_BODY_LEFT 1
 
+#define CLIENT_DONE_STATUS 1000
+
 class Client
 {
 	private:
@@ -48,6 +50,7 @@ class Client
 		HttpResponse	_response;
 		std::string		_file_path;
 		Config			*_config_location;
+		Socket			*_socket;
 
 		void makeFilePath();
 		void checkFilePath();
@@ -58,6 +61,7 @@ class Client
 		std::string autoindex();
 		void makePutMsg();
 		void makePostMsg();
+		char **setEnv();
 
 		bool isCGIrequest();
         void execCGI();
@@ -83,6 +87,7 @@ class Client
 
 		int				getFd();
 		e_sock_status	getSockStatus();
+		
 
 		class SocketAcceptException: public std::exception
 		{

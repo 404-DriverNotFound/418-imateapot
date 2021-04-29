@@ -5,6 +5,7 @@
 
 #include <map>
 #include <deque>
+#include <unistd.h>
 
 struct StartLine
 {
@@ -26,8 +27,9 @@ struct StartLineRes : public StartLine
 
 class Http
 {
-	std::map<std::string, std::string>		_headers;
-	std::string								_body;
+	protected:
+		std::map<std::string, std::string>		_headers;
+		std::string								_body;
 
 	public:
 		void insertToHeader(const std::string &, const std::string &);
@@ -37,7 +39,8 @@ class Http
 
 class HttpRequest : public Http
 {
-	StartLineReq			_start_line;
+	private:
+		StartLineReq			_start_line;
 
 	public:
 		StartLineReq &getStartLine();
@@ -45,9 +48,13 @@ class HttpRequest : public Http
 
 class HttpResponse : public Http
 {
-	StartLineRes			_start_line;
+	private:
+		StartLineRes			_start_line;
 
 	public:
+		void sendStartLine(int fd);
+		void sendHeader(int fd);
+		void sendBody(int fd);
 		StartLineRes &getStartLine();
 };
 

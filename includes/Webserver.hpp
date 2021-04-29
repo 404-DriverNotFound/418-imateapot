@@ -24,10 +24,11 @@ class Webserver
 		void readRequest(Client &client);
 		void handleResponse(Client &client);
 
-		void handleHttpError(std::map<int, int>& err_index, bool is_request);
+		void handleClientDone(std::map<int, int>& done_info);
 
 	public:
 		Webserver(const std::string &path, uint32_t max_connection);
+		~Webserver();
 		void startServer();
 
 		/*---- getter ----*/
