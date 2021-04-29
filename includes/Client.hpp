@@ -59,8 +59,8 @@ class Client
 		void makePutMsg();
 		void makePostMsg();
 
-
-		void procCgi();
+		bool isCGIrequest();
+        void execCGI();
 
 	public:
 		Client(Socket &socket);

@@ -48,7 +48,6 @@ void Client::checkFilePath()
 	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
 	{
 		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtime);
-		std::cout << last_modified << std::endl;
 		this->_response.insertToHeader("Last-modified", last_modified);
 		return ;
 	}
@@ -201,6 +200,69 @@ void Client::makePutMsg()
 void Client::makePostMsg()
 {
 	// TODO: 보류
+}
+
+bool Client::isCGIrequest()
+{
+	if (_config_location->cgi_extension.empty())
+		return false;
+
+	std::vector<std::string> split = ft_split(_request.getStartLine().path, '.');
+
+	if (split[split.size() - 1] != this->_config_location->cgi_extension)
+		return false;
+	return true;
+}
+
+void Client::execCGI()
+{
+	int		ret, status;
+	int		fd[2], tmp_fd;
+	pid_t	pid;
+	char	*args[3];
+	char	buf[BUFSIZ];
+	char	**env /* = env 받아오는 함수 */;
+
+	this->makeFilePath();
+	this->checkFilePath();
+	std::cout << "here is cgi" << std::endl;
+
+	args[0] = strdup(this->_config_location->cgi_path.c_str());
+	args[1] = strdup(this->_file_path.c_str());
+	args[2] = NULL;
+
+	if ((tmp_fd = open("./tmp_file", O_WRONLY | O_CREAT, 0666) == -1)
+		|| (pipe(fd) == -1)
+		|| ((pid = fork()) == -1))
+		throw 500;
+
+	if (pid == 0)
+	{
+		close(fd[1]); // output will go to file. so close fd[1]
+		dup2(fd[0], 0);
+		dup2(tmp_fd, 1);
+		dup2(tmp_fd, 2);
+		ret = execve(args[0], args, env);
+		free(args[0]);
+		free(args[1]);
+		close(fd[0]);
+		exit(ret);
+	}
+	else
+	{
+		close(fd[0]);
+		write(fd[1], this->_request.getBody().c_str(), this->_request.getBody().length());
+		close(fd[1]);
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status) == 0)
+			throw 500;
+		free(args[0]);
+		free(args[1]);
+	}
+	while (read(tmp_fd, buf, BUFSIZ) > 0)
+		std::cout << buf;
+	close(tmp_fd);
+	std::cout << "cgi end" << std::endl;
 }
 
 /**
@@ -406,6 +468,8 @@ void Client::makeMsg()
 		throw 405;
 
 	this->makeBasicHeader();
+	if (this->isCGIrequest())
+		this->execCGI();
 
 	switch (start_line.method)
 	{
