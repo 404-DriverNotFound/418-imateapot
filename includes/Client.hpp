@@ -50,6 +50,7 @@ class Client
 		HttpResponse	_response;
 		std::string		_file_path;
 		Config			*_config_location;
+		Socket			*_socket;
 
 		void makeFilePath();
 		void checkFilePath();
@@ -60,6 +61,7 @@ class Client
 		std::string autoindex();
 		void makePutMsg();
 		void makePostMsg();
+		char **setEnv();
 
 
 		void procCgi();
@@ -85,6 +87,7 @@ class Client
 
 		int				getFd();
 		e_sock_status	getSockStatus();
+		
 
 		class SocketAcceptException: public std::exception
 		{

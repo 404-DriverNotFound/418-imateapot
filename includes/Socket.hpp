@@ -8,6 +8,7 @@
 #include <exception>
 #include <cstring>
 #include <unistd.h>
+#include "utils.hpp"
 
 class Socket
 {
@@ -15,12 +16,14 @@ class Socket
 		sockaddr_in _sockaddr;
 		uint16_t	_port;
 		int 		_fd;
+		std::string	_ip;
 
 	public:
 		Socket(uint16_t port, uint32_t max_connection);
 
 		int getFd();
 		int getPort();
+		std::string getIp();
 
 		class SocketCreationException: public std::exception
 		{

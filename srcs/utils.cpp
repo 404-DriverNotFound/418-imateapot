@@ -231,3 +231,15 @@ std::string getStatusStr(uint16_t code)
     }
     return ("");
 }
+
+std::string ft_inet_ntoa(unsigned int addr)
+{
+	unsigned int n = addr;
+
+	std::string res = std::to_string(n % 256) + ".";
+	res += std::to_string((n / 256) % 256) + ".";
+	res += std::to_string((n / 256 / 256) % 256) + ".";
+	res += std::to_string(n / 256 / 256 / 256);
+
+	return (res);
+}

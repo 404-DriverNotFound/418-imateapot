@@ -7,6 +7,7 @@
 #include <vector>
 #include <ctime>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 
 std::vector<std::string> ft_split(std::string str, char delim);
 
@@ -21,6 +22,7 @@ std::string 	getHTTPTimeFormat(time_t time);
 bool 			isFilePath(const std::string &path);
 bool			isDirPath(const std::string &path);
 std::string		getStatusStr(uint16_t code);
+std::string		ft_inet_ntoa(unsigned int addr);
 
 #ifndef FT_FD_SETSIZE
 #define FT_FD_SETSIZE 256
