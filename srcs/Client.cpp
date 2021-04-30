@@ -200,7 +200,15 @@ void Client::makePutMsg()
 
 void Client::makePostMsg()
 {
-	// TODO: 보류
+	if (_response.getBody().size() == 0)
+		makeGetMsg();
+	else
+	{
+		// if (this->isCGIRequest())
+		// 	this->execCGI();
+		// else
+		// 	;
+	}
 }
 
 char **Client::setEnv()
@@ -479,6 +487,7 @@ void Client::makeMsg()
 		break ;
 
 	case POST:
+		this->makePostMsg();
 		break ;
 
 	default:
