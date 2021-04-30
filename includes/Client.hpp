@@ -61,10 +61,11 @@ class Client
 		std::string autoindex();
 		void makePutMsg();
 		void makePostMsg();
-		char **setEnv();
 
-		bool isCGIrequest();
+		bool isCGIRequest();
+		char **setEnv();
         void execCGI();
+		void parseCGIBuffer();
 
 	public:
 		Client(Socket &socket);
