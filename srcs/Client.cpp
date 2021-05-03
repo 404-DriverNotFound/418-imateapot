@@ -334,7 +334,8 @@ void Client::parseCGIBuffer()
 			this->_response.insertToHeader(split[0], split[1]);
 	}
 	this->_response.getBody() = _buffer;
-	this->_response.getBody().erase(this->_response.getBody().length());
+	this->_response.getBody().erase(this->_response.getBody().length()); // EOF 삭제
+	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().length()));
 	std::cout << this->_response.getBody() << std::endl;
 }
 
