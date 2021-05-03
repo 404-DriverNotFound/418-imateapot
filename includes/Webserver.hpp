@@ -8,8 +8,6 @@
 #include <string>
 #include <unistd.h>
 
-#define READ_BUFFER 1024
-
 class Webserver
 {
 	private:
