@@ -42,15 +42,16 @@ void Client::checkFilePath()
 		default:
 			throw 503;
 		}
-		return ;
 	}
 
 	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
 	{
 		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtime);
 		this->_response.insertToHeader("Last-modified", last_modified);
+		this->_response.insertToHeader("Content-Length", ft_itos(path_stat.st_size));
 		return ;
 	}
+	// TODO: 로케이션 인덱스를 url의 경로를 바탕으로 탐색해야 함
 	// if _file_path is a dir
 	std::string root = config.root;
 
@@ -62,11 +63,23 @@ void Client::checkFilePath()
 		throw 404;
 
 	// if in root
-	int fd;
-	if ((fd = open(config.index.c_str(), O_RDONLY)) == -1)
+	if (stat(config.index.c_str(), &path_stat)) // if stat() failed
+	{
+		switch (errno)
+		{
+		case EACCES:
+		case EFAULT:
+		case ENOENT:
+		case ENOTDIR:
+			throw 404;
+		default:
+			throw 503;
+		}
+	}
+	if (FT_S_ISDIR(path_stat.st_mode))
 		throw 404;
-	close(fd);
 	this->_file_path = config.index;
+	this->_response.insertToHeader("Content-Length", ft_itos(path_stat.st_size));
 }
 
 /**
@@ -105,7 +118,6 @@ void Client::makeHeadMsg()
 	this->_response.insertToHeader("Content-Location", content_location);
 	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Type", "text/plain");
-	this->_response.insertToHeader("Transfer-Encoding", "chunked");
 }
 
 void Client::makeGetMsg()
@@ -132,6 +144,8 @@ void Client::makeGetMsg()
 		{
 			getline(file, line);
 			this->_response.getBody() += line;
+			if (!file.eof())
+				this->_response.getBody() += "\n";
 		}
 		file.close();
 	}
@@ -527,7 +541,6 @@ void Client::makeBasicHeader()
 	this->_response.insertToHeader("Date", getCurrentTime());
 	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Type", "text/plain");
-	this->_response.insertToHeader("Transfer-Encoding", "chunked");
 }
 
 /**

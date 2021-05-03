@@ -98,9 +98,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("method"))
 	{
-		if (is_location)
-			for (int i = 0; i < 4; i++)
-				this->method[i] = false;
+		for (int i = 0; i < 4; i++)
+			this->method[i] = false;
 		for (size_t i = 1; i < split.size(); i++)
 		{
 			if (!split[i].compare("GET"))
@@ -112,7 +111,10 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 			else if (!split[i].compare("POST"))
 				this->method[POST] = true;
 			else
+			{
+				std::cout << "this";
 				throw ConfigGroup::ConfigFormatException();
+			}
 		}
 	}
 	else if (!split[0].compare("root"))
