@@ -124,10 +124,10 @@ void Webserver::startServer()
  */
 void Webserver::readRequest(Client &client)
 {
-	char	buff[READ_BUFFER];
+	char	buff[BUF_SIZE];
 	int		len;
 
-	len = read(client.getFd(), buff, READ_BUFFER);
+	len = read(client.getFd(), buff, BUF_SIZE);
 	if (len < 0)
 		throw 503;
 	if (len == 0)

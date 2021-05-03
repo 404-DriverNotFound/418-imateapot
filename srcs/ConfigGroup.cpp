@@ -48,13 +48,14 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 		is_root_set = true;
 		std::getline(config_file, line);
     }
+	if (server_config.cgi_path.empty() != server_config.cgi_extension.empty())
+		throw ConfigGroup::ConfigFormatException();
 
 	if (!checkDupLocation(server_vector))
 		throw ConfigGroup::ConfigFormatException();
     server_vector.push_back(server_config);
 
 	_configs.push_back(server_vector);
-
 }
 /**
  * parseLocation
@@ -97,6 +98,8 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
 		is_root_set = true;
 		std::getline(config_file, line);
     }
+	if (location_config.cgi_path.empty() != location_config.cgi_extension.empty())
+		throw ConfigGroup::ConfigFormatException();
     return (location_config);
 }
 

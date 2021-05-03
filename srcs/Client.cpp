@@ -111,15 +111,9 @@ std::string Client::makeContentLocation()
  */
 void Client::makeHeadMsg()
 {
-	StartLineRes &start_line = this->_response.getStartLine();
-
 	this->makeFilePath();
 	this->checkFilePath();
 	std::string content_location = this->makeContentLocation();
-
-	std::cout << "code: " << (unsigned int)start_line.status_code << std::endl;
-	std::cout << "path: " << this->_file_path << std::endl;
-	std::cout << "contentLocation: " << content_location << std::endl;
 
 	this->_response.insertToHeader("Content-Location", content_location);
 	this->_response.insertToHeader("Content-Language", "ko");
@@ -129,7 +123,6 @@ void Client::makeHeadMsg()
 void Client::makeGetMsg()
 {
 	this->makeHeadMsg();
-	// TODO: body를 encoding 없이 raw로 push해주기
 	std::ifstream file;
 	struct stat info;
 	std::string line;
@@ -216,6 +209,18 @@ void Client::makePostMsg()
 	// TODO: 보류
 }
 
+bool Client::isCGIRequest()
+{
+	if (_config_location->cgi_extension.empty())
+		return false;
+
+	std::vector<std::string> split = ft_split(_request.getStartLine().path, '.');
+
+	if (split[split.size() - 1] != this->_config_location->cgi_extension)
+		return false;
+	return true;
+}
+
 char **Client::setEnv()
 {
 	char								**env = 0;
@@ -246,10 +251,12 @@ char **Client::setEnv()
 	map_env["REMOTE_ADDR"] = this->_socket->getIp();
 	map_env["REQUEST_METHOD"] = numToMethod(this->_request.getStartLine().method);
 
-	map_env["REQUEST_URI"] = this->_request.getStartLine().path + "?" + this->_request.getStartLine().query_string;
-	map_env["SCRIPT_NAME"] = this->_request.getStartLine().path;
+	map_env["REQUEST_URI"] = this->_request.getStartLine().path ;
+	if (!this->_request.getStartLine().query_string.empty())
+		map_env["REQUEST_URI"] += "?" + this->_request.getStartLine().query_string;
+	map_env["SCRIPT_NAME"] = this->_config_location->cgi_path;
 	map_env["SERVER_NAME"] = _config_location->server_name;
-	map_env["SERVER_PORT"] = _config_location->port;
+	map_env["SERVER_PORT"] = ft_itos(_config_location->port);
 	map_env["SERVER_PROTOCOL"] = "HTTP/1.1";
 	map_env["SERVER_SOFTWARE"] = "418-IAmATeapot";
 
@@ -265,6 +272,85 @@ char **Client::setEnv()
 	}
 	env[i] = NULL;
 	return (env);
+}
+
+void Client::execCGI()
+{
+	std::string tmp_name = ".TMP_FILE" + ft_itos(this->_fd);
+	int		ret, status, in_fd[2], tmp_fd;
+	pid_t	pid;
+	char	*args[3];
+	char	buf[BUF_SIZE];
+	char	**env = this->setEnv();
+
+	this->_buffer.clear();
+	this->makeFilePath();
+
+	args[0] = strdup(this->_config_location->cgi_path.c_str());
+	args[1] = strdup(this->_file_path.c_str());
+	args[2] = NULL;
+
+	if ((pipe(in_fd) == -1) || ((pid = fork()) == -1))
+		throw 500;
+
+	if ((tmp_fd = open(tmp_name.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666)) == -1)
+		throw 500;
+
+	if (pid == 0)
+	{
+		close(in_fd[1]);
+		dup2(in_fd[0], 0);
+		dup2(tmp_fd, 1);
+		ret = execve(args[0], args, env);
+		free(args[0]);
+		free(args[1]);
+		close(in_fd[0]);
+		exit(ret);
+	}
+	else
+	{
+		close(in_fd[0]);
+		// FIXME: write, read는 모두 select를 거치도록 변경 
+		write(in_fd[1], this->_request.getBody().c_str(), this->_request.getBody().length());
+		close(in_fd[1]);
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status) == 0)
+			throw 500;
+		free(args[0]);
+		free(args[1]);
+	}
+	while (read(tmp_fd, buf, BUF_SIZE) > 0)
+	{
+		// FIXME: 헤더만 따고 나면 바로 바디로 어펜드 해버리기
+		// 그런데 어차피 리팩토링 하면서 다 뒤집어 엎어야 함
+		// 나중에 하자
+		this->_buffer += buf;
+	}
+	this->parseCGIBuffer();
+}
+
+void Client::parseCGIBuffer()
+{
+	std::string tmp;
+	size_t pos;
+
+	while ((pos = this->_buffer.find('\n')) != std::string::npos && this->_sock_status != RECV_BODY)
+	{
+		tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
+		std::vector<std::string> split = ft_split(tmp, ':');
+		_buffer.erase(0, pos + 1);
+		if (tmp.length() == 0)
+			break ;
+		ft_trim(split[1], " \t");
+		if (split[0] == "Status")
+			this->_response.getStartLine().status_code = ft_atoi(split[1]);
+		else
+			this->_response.insertToHeader(split[0], split[1]);
+	}
+	this->_response.getBody() = _buffer;
+	this->_response.getBody().erase(this->_response.getBody().length()); // EOF 삭제
+	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().length()));
+	std::cout << this->_response.getBody() << std::endl;
 }
 
 /**
@@ -366,7 +452,8 @@ void Client::setClientResReady(ConfigGroup &group)
 		for (unsigned long i = 0; i < server_config.size() - 1; i++)
 		{
 			std::string config_path = server_config[i].location_path;
-			if (!path.compare(0, config_path.size(), config_path))
+			if (!path.compare(config_path) ||
+				!path.compare(0, config_path.size() + 1, config_path + '/'))
 			{
 				this->_config_location = &(server_config[i]);
 				return;
@@ -470,11 +557,14 @@ void Client::makeMsg()
 			throw 403;
 	}
 
-	// TODO: 설정 파일 작동되는지 확인해야함
 	if (!(this->_config_location->method[start_line.method]))
 		throw 405;
 
 	this->makeBasicHeader();
+
+	// FIXME: 이 위치에서 체크하면 안 되기 때문에 GET, POST에 넣고 지워야 합니다.
+	if (this->isCGIRequest())
+		this->execCGI();
 
 	switch (start_line.method)
 	{
