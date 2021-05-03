@@ -24,8 +24,6 @@ Config::Config(const Config &src, std::string &loc_path):
 	server_name(src.server_name),
 	root(src.root),
 	port(src.port),
-	index(src.index),
-	error_page(src.error_page),
 	body_length(src.body_length),
 	autoindex(src.autoindex),
 	timeout(src.timeout),
@@ -65,11 +63,11 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("index"))
 	{
-		this->index = this->root + "/" + split[1];
+		this->index = split[1];
 	}
 	else if (!split[0].compare("error_page"))
 	{
-		this->error_page = this->root + "/" + split[1];
+		this->error_page = split[1];
 	}
 	else if (!split[0].compare("body_length"))
 	{
@@ -111,10 +109,7 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 			else if (!split[i].compare("POST"))
 				this->method[POST] = true;
 			else
-			{
-				std::cout << "this";
 				throw ConfigGroup::ConfigFormatException();
-			}
 		}
 	}
 	else if (!split[0].compare("root"))
@@ -129,8 +124,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 		{
 			this->root = split[1];
 			this->server_root = this->root;
-			this->index = this->root + "/index.html";
-			this->error_page = this->root + "/error.html";
+			// this->index = this->root + "/index.html";
+			// this->error_page = this->root + "/error.html";
 		}
 	}
 	else if (!split[0].compare("cgi_path"))
