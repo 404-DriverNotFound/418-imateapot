@@ -262,44 +262,41 @@ char **Client::setEnv()
 
 void Client::execCGI()
 {
-	int		ret, status, in_fd[2], out_fd[2];
+	std::string tmp_name = ".TMP_FILE" + ft_itos(this->_fd);
+	int		ret, status, in_fd[2], tmp_fd;
 	pid_t	pid;
 	char	*args[3];
-	char	buf[BUFSIZ];
+	char	buf[BUF_SIZE];
 	char	**env = this->setEnv();
 
 	this->_buffer.clear();
 	this->makeFilePath();
 
-	// TODO: php, bla, 그 외에 따라 바꾸기
 	args[0] = strdup(this->_config_location->cgi_path.c_str());
 	args[1] = strdup(this->_file_path.c_str());
 	args[2] = NULL;
 
-	/**
-	* TODO: pipe가 fd에 접근하는 것보다 느리기 때문에
-	*		tmp_fd로 바꾸는 것을 고려해야 할 것 같습니다. 
-	*/
-	if ((pipe(in_fd) == -1) || (pipe(out_fd) == -1) || ((pid = fork()) == -1))
+	if ((pipe(in_fd) == -1) || ((pid = fork()) == -1))
 		throw 500;
 
-	close(out_fd[0]);
+	if ((tmp_fd = open(tmp_name.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666)) == -1)
+		throw 500;
+
 	if (pid == 0)
 	{
 		close(in_fd[1]);
 		dup2(in_fd[0], 0);
-		dup2(out_fd[1], 1);
+		dup2(tmp_fd, 1);
 		ret = execve(args[0], args, env);
 		free(args[0]);
 		free(args[1]);
 		close(in_fd[0]);
-		close(out_fd[1]);
 		exit(ret);
 	}
 	else
 	{
-		close(out_fd[1]);
 		close(in_fd[0]);
+		// FIXME: write, read는 모두 select를 거치도록 변경 
 		write(in_fd[1], this->_request.getBody().c_str(), this->_request.getBody().length());
 		close(in_fd[1]);
 		waitpid(pid, &status, 0);
@@ -308,8 +305,13 @@ void Client::execCGI()
 		free(args[0]);
 		free(args[1]);
 	}
-	while (read(out_fd[0], buf, BUFSIZ) > 0)
+	while (read(tmp_fd, buf, BUF_SIZE) > 0)
+	{
+		// FIXME: 헤더만 따고 나면 바로 바디로 어펜드 해버리기
+		// 그런데 어차피 리팩토링 하면서 다 뒤집어 엎어야 함
+		// 나중에 하자
 		this->_buffer += buf;
+	}
 	this->parseCGIBuffer();
 }
 
@@ -435,7 +437,8 @@ void Client::setClientResReady(ConfigGroup &group)
 		for (unsigned long i = 0; i < server_config.size() - 1; i++)
 		{
 			std::string config_path = server_config[i].location_path;
-			if (!path.compare(0, config_path.size(), config_path))
+			if (!path.compare(config_path) ||
+				!path.compare(0, config_path.size() + 1, config_path + '/'))
 			{
 				this->_config_location = &(server_config[i]);
 				return;

@@ -28,6 +28,8 @@ enum e_sock_status
 	SEND_DONE
 };
 
+#define BUF_SIZE 65535
+
 #define EMPTY_CONTENT_LENGTH -1
 #define CHUNKED_READY -1
 

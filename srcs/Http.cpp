@@ -54,6 +54,7 @@ void HttpResponse::sendStartLine(int fd)
 	str += getStatusStr(this->_start_line.status_code);
 	str += "\r\n";
 
+	// FIXME: write, read는 모두 select를 거치도록 변경 
 	write(fd, str.c_str(), str.length());
 }
 
