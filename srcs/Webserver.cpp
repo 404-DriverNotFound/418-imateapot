@@ -80,25 +80,6 @@ void Webserver::startServer()
 					FT_FD_SET(this->_socks[i].getClientFd(), &(this->_fd_read));
 					FT_FD_SET(this->_socks[i].getClientFd(), &(this->_fd_write));
 				}
-        
-			for (unsigned long i = 0; i < this->_clients.size(); i++)
-			{
-				if (this->_clients[i].getSockStatus() > RECV_BODY)
-					continue;
-				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_read)))
-				{
-					try
-					{
-						if (this->readRequest(this->_clients[i]) == CLIENT_END)
-							done_info.insert(std::make_pair<int, int>(i, CLIENT_DONE_STATUS));
-					}
-					catch(int error_status)
-					{
-						done_info.insert(std::make_pair<int, int>(i, error_status));
-					}
-				}
-			}
-			this->handleClientDone(done_info);
 
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
 			{
@@ -113,6 +94,25 @@ void Webserver::startServer()
 							done_info.insert(std::make_pair<int, int>(i, CLIENT_DONE_STATUS));
 					}
 					catch (int error_status)
+					{
+						done_info.insert(std::make_pair<int, int>(i, error_status));
+					}
+				}
+			}
+			this->handleClientDone(done_info);
+
+			for (unsigned long i = 0; i < this->_clients.size(); i++)
+			{
+				if (this->_clients[i].getSockStatus() > RECV_BODY)
+					continue;
+				if (FT_FD_ISSET(this->_clients[i].getFd(), &(temp_fd_read)))
+				{
+					try
+					{
+						if (this->readRequest(this->_clients[i]) == CLIENT_END)
+							done_info.insert(std::make_pair<int, int>(i, CLIENT_DONE_STATUS));
+					}
+					catch(int error_status)
 					{
 						done_info.insert(std::make_pair<int, int>(i, error_status));
 					}
@@ -135,10 +135,7 @@ int Webserver::readRequest(Client &client)
 
 	len = read(client.getFd(), buff, BUF_SIZE - 1);
 	if (len < 0)
-	{
-		std::cout << strerror(errno) << std::endl;
 		throw 503;
-	}
 	if (len == 0)
 	{
 		std::cout << "read = 0" << std::endl;

@@ -209,7 +209,7 @@ void Client::makePutMsg()
 		this->_response.getStartLine().status_code = 201;
 	}
 
-	file << content << "\r\n";
+	file << content;
 	file.close();
 	std::string content_location = this->makeContentLocation();
 
@@ -718,8 +718,19 @@ void Client::makeErrorStatus(uint16_t status)
 		break ;
 	}
 
+	this->_response.insertToHeader("Content-Language", "ko");
+	this->_response.insertToHeader("Content-Type", "text/plain");
+
+	// TODO: 굳이 이렇게 Body 꼭 채워서 넣어야할까요?
+
 	if (!this->isConfigSet())
-		return;
+	{
+		this->_response.getBody() += ft_itos(status);
+		this->_response.getBody() += " ";
+		this->_response.getBody() += getStatusStr(status);
+		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
+		return ;
+	}
 
 	std::string error_path;
 	if (isDirPath(_file_path))
@@ -735,7 +746,10 @@ void Client::makeErrorStatus(uint16_t status)
 
 	if ((fd = open(error_path.c_str(), O_RDONLY)) == -1)
 	{
-		this->_file_path = "";
+		this->_response.getBody() += ft_itos(status);
+		this->_response.getBody() += " ";
+		this->_response.getBody() += getStatusStr(status);
+		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
 		return ;
 	}
 	close(fd);
@@ -751,8 +765,6 @@ void Client::makeErrorStatus(uint16_t status)
 			this->_response.getBody() += "\r\n";
 	}
 	file.close();
-	this->_response.insertToHeader("Content-Language", "ko");
-	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
 }
 
