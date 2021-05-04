@@ -45,7 +45,7 @@ void Client::checkFilePath()
 		}
 	}
 
-	if (!FT_S_ISDIR(path_stat.st_mode)) // if _file_path is a file
+	if (isFilePath(this->_file_path)) // if _file_path is a file
 	{
 		std::string last_modified = getHTTPTimeFormat(path_stat.st_mtime);
 		this->_response.insertToHeader("Last-modified", last_modified);
@@ -79,7 +79,7 @@ void Client::checkFilePath()
 			throw 503;
 		}
 	}
-	if (FT_S_ISDIR(path_stat.st_mode))
+	if (isDirPath(index_path))
 		throw 404;
 	
 	this->_file_path = index_path;
@@ -107,6 +107,33 @@ std::string Client::makeContentLocation()
 	else
 		content_location.erase(0, config.server_root.length());
 	return (content_location);
+}
+
+std::string Client::makeAutoindex()
+{
+	DIR *dir;
+	struct dirent *curr;
+	std::string res;
+	std::string url;
+
+	url = this->_request.getHeaderValue("Host") + this->_request.getStartLine().path;
+	dir = opendir(this->_file_path.c_str());
+	res += "<html>\n<body>\n";
+	res += "<h1>Directory listing</h1>\n";
+	while ((curr = readdir(dir)) != NULL)
+	{
+		if (curr->d_name[0] != '.')
+		{
+			res += "<a href=\"http://" + url;
+			res += curr->d_name;
+			res += "\">";
+			res += curr->d_name;
+			res += "</a><br>\n";
+		}
+	}
+	closedir(dir);
+	res += "</body>\n</html>\n";
+	return (res);
 }
 
 /**
@@ -143,7 +170,7 @@ void Client::makeGetMsg()
 	// autoindex
 	if (isDirPath(_file_path) && this->_config_location->autoindex == true)
 	{
-		line = this->autoindex();
+		line = this->makeAutoindex();
 		this->_response.getBody() += line;
 	}
 
@@ -156,43 +183,14 @@ void Client::makeGetMsg()
 			getline(file, line);
 			this->_response.getBody() += line;
 			if (!file.eof())
-				this->_response.getBody() += "\r\n";
+				this->_response.getBody() += "\n";
 		}
 		file.close();
 	}
 }
 
-std::string Client::autoindex()
-{
-	DIR *dir;
-	struct dirent *curr;
-	std::string res;
-	std::string url;
-
-	url = this->_request.getHeaderValue("Host") + this->_request.getStartLine().path;
-	dir = opendir(this->_file_path.c_str());
-	res += "<html>\n<body>\n";
-	res += "<h1>Directory listing</h1>\n";
-	while ((curr = readdir(dir)) != NULL)
-	{
-		if (curr->d_name[0] != '.')
-		{
-			res += "<a href=\"http://" + url;
-			res += curr->d_name;
-			res += "\">";
-			res += curr->d_name;
-			res += "</a><br>\n";
-		}
-	}
-	closedir(dir);
-	res += "</body>\n</html>\n";
-	return (res);
-}
-
 void Client::makePutMsg()
 {
-	// TODO: tester 돌릴 때, 케바케로 되거나 안되거나 함.. 왜그럴까?
-	// FATAL ERROR ON LAST TEST: read tcp 127.0.0.1:52960->127.0.0.1:80: read: connection reset by peer
 	std::ofstream file;
 	std::string &content = this->_request.getBody();
 
@@ -293,7 +291,7 @@ char **Client::setEnv()
 
 void Client::execCGI()
 {
-	std::string tmp_name = ".TMP_FILE" + ft_itos(this->_fd);
+	std::string tmp_name = ".TMP_FILE" + ft_itos(getFd());
 	int		ret, status, in_fd[2], tmp_fd;
 	pid_t	pid;
 	char	*args[3];
@@ -368,6 +366,8 @@ void Client::parseCGIBuffer()
 	this->_response.getBody() = _buffer;
 	this->_response.getBody().erase(this->_response.getBody().length()); // EOF 삭제
 	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().length()));
+	this->_response.insertToHeader("Content-Language", "ko");
+	this->_response.insertToHeader("Content-Type", "text/plain");
 }
 
 /**
@@ -380,15 +380,10 @@ Client::Client(Socket &socket):
 	_content_length_left(EMPTY_CONTENT_LENGTH),
 	_chunked_length(CHUNKED_READY),
 	_sock_status(INITIALIZE),
-	_file_path(),
 	_config_location(NULL),
-	_socket(&socket)
+	_socket(&socket),
+	_is_read_finished(false)
 {
-	sockaddr	tmp;
-	socklen_t	socksize = sizeof(sockaddr_in);
-
-	if ((this->_fd = accept(socket.getFd(), &tmp, &socksize)) == -1)
-		throw Client::SocketAcceptException();
 }
 
 /**
@@ -449,8 +444,6 @@ void Client::setClientResReady(ConfigGroup &group)
 	if (host.size() == 0)
 		throw 400;
 
-	this->_sock_status = MAKE_MSG;
-
 	if (host.find(':') != std::string::npos)
 		host.erase(host.find(':'));
 
@@ -493,12 +486,15 @@ int	Client::parseBody()
 	{
 		if (static_cast<int>(this->_buffer.length()) > this->_content_length_left)
 		{
-			this->_buffer.erase(this->_content_length_left);
+			this->_request.getBody() += this->_buffer.substr(0, this->_content_length_left);
+			this->_buffer.erase(0, this->_content_length_left);
 			this->_content_length_left = 0;
 		}
 		else
+		{
 			this->_content_length_left -= this->_buffer.length();
-		this->_request.getBody() += this->_buffer;
+			this->_request.getBody() += this->_buffer;
+		}
 		if (this->_content_length_left <= 0)
 			return PARSE_BODY_END;
 		this->_buffer.clear();
@@ -511,12 +507,16 @@ int	Client::parseBody()
 			{
 				tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
 				this->_chunked_length = static_cast<int>(ft_uhextol(tmp));
-				if (this->_chunked_length == 0)
-					return PARSE_BODY_END;
 				this->_buffer.erase(0, pos + 1);
 			}
 			else
 			{
+				// chunked 형식의 끝
+				if (this->_chunked_length == 0)
+				{
+					this->_buffer.erase(0, pos + 1);
+					return PARSE_BODY_END;
+				}
 				tmp = this->_buffer;
 				pos = tmp.length();
 				if (static_cast<int>(pos) > this->_chunked_length)
@@ -526,7 +526,7 @@ int	Client::parseBody()
 				}
 				this->_request.getBody() += tmp;
 				this->_chunked_length -= pos;
-				// FIXME: chunked 형식으로 데이터가 오지 않는 경우 에러가 나지 않을지 확인해야 함.
+
 				if (this->_chunked_length <= 0)
 				{
 					this->_chunked_length = CHUNKED_READY;
@@ -548,8 +548,6 @@ void Client::makeBasicHeader()
 	start_line.protocol = "HTTP/1.1";
 	this->_response.insertToHeader("Server", "418-IAmATeapot");
 	this->_response.insertToHeader("Date", getCurrentTime());
-	this->_response.insertToHeader("Content-Language", "ko");
-	this->_response.insertToHeader("Content-Type", "text/plain");
 }
 
 /**
@@ -605,10 +603,12 @@ void Client::makeMsg()
 
 void Client::sendMsg()
 {
-	this->_response.sendStartLine(this->_fd);
-	this->_response.sendHeader(this->_fd);
+	std::cout << "========WRITE=======\n";
+	this->_response.sendStartLine(this->getFd());
+	this->_response.sendHeader(this->getFd());
 	if (!this->_response.getBody().empty())
-		this->_response.sendBody(this->_fd);
+		this->_response.sendBody(this->getFd());
+	std::cout << "=====================\n";
 	this->_sock_status = SEND_DONE;
 }
 
@@ -619,10 +619,11 @@ void Client::sendMsg()
 void Client::parseBuffer(char *buff, int len)
 {
 	std::string tmp;
+	size_t idx;
 	size_t pos;
 
 	// 이미 모두 다 받았을때 입력된 내용 버리기
-	if (this->_sock_status >= RECV_END)
+	if (this->_sock_status >= MAKE_MSG)
 		return ;
 
 	this->_buffer.append(buff, len);
@@ -630,7 +631,8 @@ void Client::parseBuffer(char *buff, int len)
 		this->_sock_status = RECV_START_LINE;
 	while ((pos = this->_buffer.find('\n')) != std::string::npos && this->_sock_status != RECV_BODY)
 	{
-		tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
+		idx = (pos ? (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos) : pos);
+		tmp = this->_buffer.substr(0, idx);
 		if (this->_sock_status == RECV_START_LINE)
 		{
 			this->parseStartLine(tmp);
@@ -645,18 +647,12 @@ void Client::parseBuffer(char *buff, int len)
 				if (!content_length_str.empty())
 				{
 					if ((this->_content_length_left = ft_atoi(content_length_str)) == 0)
-					{
-						this->_sock_status = RECV_END;
-						this->_buffer.clear();
-						return ;
-					}
+						this->_sock_status = MAKE_MSG;
 				}
 				else if (this->_request.getHeaderValue("Transfer-Encoding").compare("chunked"))
-				{
-					this->_sock_status = RECV_END;
-					this->_buffer.clear();
-					return ;
-				}
+					this->_sock_status = MAKE_MSG;
+				this->_buffer.erase(0, pos + 1);
+				return ;
 			}
 			else
 				this->parseHeader(tmp);
@@ -667,41 +663,11 @@ void Client::parseBuffer(char *buff, int len)
 	{
 		if (this->parseBody() == PARSE_BODY_END) // 받는 과정 끝났을 때!
 		{
-			this->_sock_status = RECV_END;
-			this->_buffer.clear();
+			if (this->_request.getBody().length() > this->_config_location->body_length)
+				throw 405;
+			this->_sock_status = MAKE_MSG;
 		}
 	}
-}
-
-void Client::parseLastBuffer()
-{
-	if (this->_buffer.empty())
-	{
-		this->_sock_status = RECV_END;
-		return ;
-	}
-	if (this->_sock_status == RECV_BODY)
-		this->parseBody();
-	else
-	{
-		if (this->_buffer[this->_buffer.length() - 1] == '\r')
-			this->_buffer.erase(this->_buffer.length() - 1);
-		if (this->_sock_status == RECV_START_LINE)
-			throw 400;
-		else if (this->_sock_status == RECV_HEADER)
-		{
-			if (this->_buffer.length() == 0)
-			{
-				std::string content_length_str = this->_request.getHeaderValue("Content-Length");
-				if (!content_length_str.empty())
-					this->_content_length_left = ft_atoi(content_length_str);
-			}
-			else
-				throw 400;
-		}
-	}
-	this->_buffer.clear();
-	this->_sock_status = RECV_END;
 }
 
 /**
@@ -752,6 +718,9 @@ void Client::makeErrorStatus(uint16_t status)
 		break ;
 	}
 
+	if (!this->isConfigSet())
+		return;
+
 	std::string error_path;
 	if (isDirPath(_file_path))
 		error_path = this->_file_path + "/" + config.error_page;
@@ -778,27 +747,49 @@ void Client::makeErrorStatus(uint16_t status)
 	{
 		getline(file, line);
 		this->_response.getBody() += line;
-		this->_response.getBody() += "\r\n";
+		if (!file.eof())
+			this->_response.getBody() += "\r\n";
 	}
 	file.close();
+	this->_response.insertToHeader("Content-Language", "ko");
+	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
 }
 
-void Client::setBodyLength()
+bool Client::isConfigSet()
 {
-	this->_body_length_left = this->_config_location->body_length;
-	if (this->_body_length_left < this->_content_length_left)
-		this->_content_length_left = this->_body_length_left;
+	return (this->_config_location != NULL);
+}
+
+void Client::reset()
+{
+	this->_content_length_left = EMPTY_CONTENT_LENGTH;
+	this->_chunked_length = CHUNKED_READY;
+	this->_sock_status = INITIALIZE;
+	this->_request = HttpRequest();
+	this->_response = HttpResponse();
+	this->_file_path = "";
+	this->_config_location = NULL;
 }
 
 int Client::getFd()
 {
-	return this->_fd;
+	return this->_socket->getClientFd();
 }
 
 e_sock_status Client::getSockStatus()
 {
 	return this->_sock_status;
+}
+
+bool Client::getIsReadFinished()
+{
+	return this->_is_read_finished;
+}
+
+void Client::setIsReadFinished(bool is_read_finished)
+{
+	this->_is_read_finished = is_read_finished;
 }
 
 const char *Client::SocketAcceptException::what() const throw()

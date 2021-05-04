@@ -74,13 +74,13 @@ int	ft_atoi(const std::string &str)
 	long long result = 0;
 	int minus_flag = 1, index = 0;
 
-	if (!str.empty() && (str[index] == '+' || str[index] == '-'))
+	if (!str.empty() && (str[index] == '+' || str[index] == '-') && static_cast<int>(str.length()) > index)
 	{
 		if (str[index] == '-')
 			minus_flag = -1;
 		index++;
 	}
-	while ('0' <= str[index] && str[index] <= '9')
+	while ('0' <= str[index] && str[index] <= '9' && static_cast<int>(str.length()) > index)
 	{
 		result *= 10;
 		result += (str[index] - '0');
@@ -137,9 +137,9 @@ unsigned long	ft_uhextol(const std::string &str)
 	unsigned long	result = 0;
 	int				index = 0;
 
-	while (('0' <= str[index] && str[index] <= '9') ||
+	while ((('0' <= str[index] && str[index] <= '9') ||
 			('A' <= str[index] && str[index] <= 'F') ||
-			('a' <= str[index] && str[index] <= 'f'))
+			('a' <= str[index] && str[index] <= 'f')) && static_cast<int>(str.length()) > index )
 	{
 		result *= 16;
 		if (str[index] <= '9')

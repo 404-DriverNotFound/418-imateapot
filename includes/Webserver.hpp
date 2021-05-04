@@ -8,6 +8,9 @@
 #include <string>
 #include <unistd.h>
 
+#define CLIENT_END 0
+#define CLIENT_CONTINUE 1
+
 class Webserver
 {
 	private:
@@ -19,7 +22,7 @@ class Webserver
 		std::vector<Client>	_clients;
 
 		void acceptRequest(Socket &sock);
-		void readRequest(Client &client);
+		int readRequest(Client &client);
 		void handleResponse(Client &client);
 
 		void handleClientDone(std::map<int, int>& done_info);

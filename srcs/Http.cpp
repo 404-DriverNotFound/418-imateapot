@@ -54,7 +54,8 @@ void HttpResponse::sendStartLine(int fd)
 	str += getStatusStr(this->_start_line.status_code);
 	str += "\r\n";
 
-	// FIXME: write, read는 모두 select를 거치도록 변경 
+	// FIXME: write, read는 모두 select를 거치도록 변경
+	std::cout << str;
 	write(fd, str.c_str(), str.length());
 }
 
@@ -71,11 +72,13 @@ void HttpResponse::sendHeader(int fd)
 		str += "\r\n";
 	}
 	str += "\r\n";
+	std::cout << str;
 	write(fd, str.c_str(), str.length());
 }
 
 void HttpResponse::sendBody(int fd)
 {
+	std::cout << this->_body;
 	write(fd, this->_body.c_str(), this->_body.length());
 }
 

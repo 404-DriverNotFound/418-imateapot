@@ -15,15 +15,19 @@ class Socket
 	private:
 		sockaddr_in _sockaddr;
 		uint16_t	_port;
-		int 		_fd;
+		int 		_sock_fd;
+		int			_client_fd;
 		std::string	_ip;
 
 	public:
 		Socket(uint16_t port, uint32_t max_connection);
 
-		int getFd();
+		int getSockFd();
+		int getClientFd();
 		int getPort();
 		std::string getIp();
+
+		void setClientFd(int fd);
 
 		class SocketCreationException: public std::exception
 		{

@@ -21,7 +21,7 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 	for (size_t i = 0; i < server_ports.size(); i++)
 	{
 		this->_socks.push_back(Socket(server_ports[i], max_connection));
-		FT_FD_SET(this->_socks[i].getFd(),&(this->_fd_read));
+		FT_FD_SET(this->_socks[i].getSockFd(),&(this->_fd_read));
 	}
 }
 
@@ -33,7 +33,7 @@ Webserver::~Webserver()
 
 	std::vector<Socket>::iterator socket_ite = this->_socks.end();
 	for (std::vector<Socket>::iterator it = this->_socks.begin(); it != socket_ite; it++)
-		close(it->getFd());
+		close(it->getSockFd());
 }
 
 /**
@@ -60,10 +60,16 @@ void Webserver::startServer()
 			continue;
 		default:
 			for (size_t i = 0; i < this->_socks.size(); i++)
-				if (FT_FD_ISSET(this->_socks[i].getFd(), &(temp_fd_read)))
+				if (FT_FD_ISSET(this->_socks[i].getSockFd(), &(temp_fd_read)))
 				{
 					try
 					{
+						sockaddr	tmp;
+						socklen_t	socksize = sizeof(sockaddr_in);
+
+						this->_socks[i].setClientFd(accept(this->_socks[i].getSockFd(), &tmp, &socksize));
+						if (this->_socks[i].getClientFd() == -1)
+							throw Client::SocketAcceptException();
 						this->_clients.push_back(Client(this->_socks[i]));
 					}
 					catch(const std::exception& e)
@@ -71,9 +77,8 @@ void Webserver::startServer()
 						std::cerr << e.what() << '\n';
 						break ;
 					}
-					Client &created = *(this->_clients.rbegin());
-					FT_FD_SET(created.getFd(), &(this->_fd_read));
-					FT_FD_SET(created.getFd(), &(this->_fd_write));
+					FT_FD_SET(this->_socks[i].getClientFd(), &(this->_fd_read));
+					FT_FD_SET(this->_socks[i].getClientFd(), &(this->_fd_write));
 				}
         
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
@@ -84,7 +89,8 @@ void Webserver::startServer()
 				{
 					try
 					{
-						this->readRequest(this->_clients[i]);
+						if (this->readRequest(this->_clients[i]) == CLIENT_END)
+							done_info.insert(std::make_pair<int, int>(i, CLIENT_DONE_STATUS));
 					}
 					catch(int error_status)
 					{
@@ -122,33 +128,38 @@ void Webserver::startServer()
  * @brief  select를 통해 들어온 특정 소켓의 데이터를 처리하는 함수
  * @param  {Socket} sock : select를 통해 데이터가 들어온 것을 확인한 소켓
  */
-void Webserver::readRequest(Client &client)
+int Webserver::readRequest(Client &client)
 {
 	char	buff[BUF_SIZE];
 	int		len;
 
 	len = read(client.getFd(), buff, BUF_SIZE - 1);
-	buff[len] = '\0';
 	if (len < 0)
+	{
+		std::cout << strerror(errno) << std::endl;
 		throw 503;
+	}
 	if (len == 0)
 	{
-		//client.parseLastBuffer();
-		return ;
+		std::cout << "read = 0" << std::endl;
+		client.setIsReadFinished(true);
+		return CLIENT_END;
 	}
+	buff[len] = '\0';
+	std::cout << "=========READ=========\n" << buff << "=====================\n";
 	client.parseBuffer(buff, len);
+	if (client.getSockStatus() == RECV_BODY && !client.isConfigSet())
+		client.setClientResReady(this->_configs);
+	return CLIENT_CONTINUE;
 }
 
 void Webserver::handleResponse(Client &client)
 {
-	if (client.getSockStatus() == RECV_END)
+	if (client.getSockStatus() == MAKE_MSG)
 	{
-		client.setClientResReady(_configs);
-		// TODO: 클라이언트 로케이션에 따라 cgi인지 아닌지 구분해 status를 변경해야함.
-		if (client.getSockStatus() == PROC_CGI)
-			;
-		else
-			client.makeMsg();
+		if (!client.isConfigSet())
+			client.setClientResReady(this->_configs);
+		client.makeMsg();
 	}
 	else if (client.getSockStatus() == SEND_MSG)
 		client.sendMsg();
@@ -169,10 +180,15 @@ void Webserver::handleClientDone(std::map<int, int>& done_info)
 			client->makeErrorStatus(rit->second);
 			client->sendMsg();
 		}
-		FT_FD_CLR(client->getFd(), &(this->_fd_read));
-		FT_FD_CLR(client->getFd(), &(this->_fd_write));
-		close(client->getFd());
-		this->_clients.erase(client);
+		if (rit->second == CLIENT_DONE_STATUS && client->getIsReadFinished())
+		{
+			FT_FD_CLR(client->getFd(), &(this->_fd_read));
+			FT_FD_CLR(client->getFd(), &(this->_fd_write));
+			close(client->getFd());
+			this->_clients.erase(client);
+		}
+		else
+			client->reset();
 	}
 	done_info.clear();
 }

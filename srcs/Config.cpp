@@ -24,6 +24,8 @@ Config::Config(const Config &src, std::string &loc_path):
 	server_name(src.server_name),
 	root(src.root),
 	port(src.port),
+	index(src.index),
+	error_page(src.error_page),
 	body_length(src.body_length),
 	autoindex(src.autoindex),
 	timeout(src.timeout),

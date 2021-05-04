@@ -21,9 +21,7 @@ enum e_sock_status
 	RECV_START_LINE,
 	RECV_HEADER,
 	RECV_BODY,
-	RECV_END,
 	MAKE_MSG,
-	PROC_CGI,
 	SEND_MSG,
 	SEND_DONE
 };
@@ -43,10 +41,8 @@ class Webserver;
 class Client
 {
 	private:
-		int				_fd;
 		uint16_t		_port;
 		int				_content_length_left;
-		int				_body_length_left;
 		int				_chunked_length;
 		std::string		_buffer;
 		e_sock_status	_sock_status;
@@ -55,14 +51,15 @@ class Client
 		std::string		_file_path;
 		Config			*_config_location;
 		Socket			*_socket;
+		bool			_is_read_finished;
 
 		void makeFilePath();
 		void checkFilePath();
 		std::string makeContentLocation();
+		std::string makeAutoindex();
 
 		void makeHeadMsg();
 		void makeGetMsg();
-		std::string autoindex();
 		void makePutMsg();
 		void makePostMsg();
 
@@ -83,15 +80,18 @@ class Client
 		void sendMsg();
 
 		void parseBuffer(char *buff, int len);
-		void parseLastBuffer();
 
 		void makeBasicHeader();
 		void makeErrorStatus(uint16_t status);
 
-		void setBodyLength();
+		bool isConfigSet();
+		void reset();
 
 		int				getFd();
 		e_sock_status	getSockStatus();
+		bool			getIsReadFinished();
+
+		void			setIsReadFinished(bool is_read_finished);
 		
 
 		class SocketAcceptException: public std::exception
