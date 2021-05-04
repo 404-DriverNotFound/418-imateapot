@@ -28,6 +28,7 @@ void Client::makeFilePath()
 void Client::checkFilePath()
 {
 	Config &config = *this->_config_location;
+	std::string index_path;
 	struct stat	path_stat;
 
 	if (stat(this->_file_path.c_str(), &path_stat)) // if stat() failed
@@ -59,11 +60,13 @@ void Client::checkFilePath()
 		return ;
 
 	// if autoindex is off
-	if (this->_file_path != root) // if not in root
-		throw 404;
+	// if (this->_file_path != root) // if not in root
+	// 	throw 404;
 
 	// if in root
-	if (stat(config.index.c_str(), &path_stat)) // if stat() failed
+	index_path = _file_path + "/" + config.index;
+
+	if (stat(index_path.c_str(), &path_stat)) // if stat() failed
 	{
 		switch (errno)
 		{
@@ -78,7 +81,8 @@ void Client::checkFilePath()
 	}
 	if (FT_S_ISDIR(path_stat.st_mode))
 		throw 404;
-	this->_file_path = config.index;
+	
+	this->_file_path = index_path;
 	this->_response.insertToHeader("Content-Length", ft_itos(path_stat.st_size));
 }
 
@@ -111,7 +115,6 @@ std::string Client::makeContentLocation()
  */
 void Client::makeHeadMsg()
 {
-	this->makeFilePath();
 	this->checkFilePath();
 	std::string content_location = this->makeContentLocation();
 
@@ -122,10 +125,18 @@ void Client::makeHeadMsg()
 
 void Client::makeGetMsg()
 {
-	this->makeHeadMsg();
+
 	std::ifstream file;
 	struct stat info;
 	std::string line;
+
+	if (this->isCGIRequest())
+	{
+		this->execCGI();
+		return ;
+	}
+	
+	this->makeHeadMsg();
 
 	stat(this->_file_path.c_str(), &info);
 
@@ -145,7 +156,7 @@ void Client::makeGetMsg()
 			getline(file, line);
 			this->_response.getBody() += line;
 			if (!file.eof())
-				this->_response.getBody() += "\n";
+				this->_response.getBody() += "\r\n";
 		}
 		file.close();
 	}
@@ -180,10 +191,10 @@ std::string Client::autoindex()
 
 void Client::makePutMsg()
 {
+	// TODO: tester 돌릴 때, 케바케로 되거나 안되거나 함.. 왜그럴까?
+	// FATAL ERROR ON LAST TEST: read tcp 127.0.0.1:52960->127.0.0.1:80: read: connection reset by peer
 	std::ofstream file;
 	std::string &content = this->_request.getBody();
-
-	this->makeFilePath();
 
 	if (isFilePath(_file_path))
 	{
@@ -202,11 +213,17 @@ void Client::makePutMsg()
 
 	file << content << "\r\n";
 	file.close();
+	std::string content_location = this->makeContentLocation();
+
+	this->_response.insertToHeader("Content-Location", content_location);
 }
 
 void Client::makePostMsg()
 {
-	// TODO: 보류
+	if (_response.getBody().size() == 0)
+		makeGetMsg();
+	else if (this->isCGIRequest())
+		this->execCGI();
 }
 
 bool Client::isCGIRequest()
@@ -284,7 +301,6 @@ void Client::execCGI()
 	char	**env = this->setEnv();
 
 	this->_buffer.clear();
-	this->makeFilePath();
 
 	args[0] = strdup(this->_config_location->cgi_path.c_str());
 	args[1] = strdup(this->_file_path.c_str());
@@ -319,12 +335,14 @@ void Client::execCGI()
 		free(args[0]);
 		free(args[1]);
 	}
-	while (read(tmp_fd, buf, BUF_SIZE) > 0)
+	while ((ret = read(tmp_fd, buf, BUF_SIZE - 1)) > 0)
 	{
 		// FIXME: 헤더만 따고 나면 바로 바디로 어펜드 해버리기
 		// 그런데 어차피 리팩토링 하면서 다 뒤집어 엎어야 함
 		// 나중에 하자
-		this->_buffer += buf;
+		// this->_buffer += buf;
+		buf[ret] = '\0';
+		this->_buffer.append(buf);
 	}
 	this->parseCGIBuffer();
 }
@@ -350,7 +368,6 @@ void Client::parseCGIBuffer()
 	this->_response.getBody() = _buffer;
 	this->_response.getBody().erase(this->_response.getBody().length()); // EOF 삭제
 	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().length()));
-	std::cout << this->_response.getBody() << std::endl;
 }
 
 /**
@@ -542,6 +559,7 @@ void Client::makeBasicHeader()
 void Client::makeMsg()
 {
 	StartLineReq &start_line = this->_request.getStartLine();
+	this->makeFilePath();
 
 	std::cout << start_line << std::endl;
 
@@ -562,10 +580,6 @@ void Client::makeMsg()
 
 	this->makeBasicHeader();
 
-	// FIXME: 이 위치에서 체크하면 안 되기 때문에 GET, POST에 넣고 지워야 합니다.
-	if (this->isCGIRequest())
-		this->execCGI();
-
 	switch (start_line.method)
 	{
 	case HEAD:
@@ -581,6 +595,7 @@ void Client::makeMsg()
 		break ;
 
 	case POST:
+		this->makePostMsg();
 		break ;
 
 	default:
@@ -737,21 +752,36 @@ void Client::makeErrorStatus(uint16_t status)
 		break ;
 	}
 
-	if ((fd = open(config.error_page.c_str(), O_RDONLY)) == -1)
+	std::string error_path;
+	if (isDirPath(_file_path))
+		error_path = this->_file_path + "/" + config.error_page;
+	else
+	{
+		size_t pos = this->_file_path.find_last_of('/');
+		if (pos == std::string::npos)
+			error_path = this->_file_path + config.error_page;
+		else
+			error_path = this->_file_path.substr(0, pos + 1) + config.error_page;
+	}
+
+	if ((fd = open(error_path.c_str(), O_RDONLY)) == -1)
 	{
 		this->_file_path = "";
 		return ;
 	}
 	close(fd);
-	this->_file_path = config.error_page;
 
+	this->_file_path = error_path;
+	
 	file.open(this->_file_path.c_str());
 	while (!file.eof())
 	{
 		getline(file, line);
 		this->_response.getBody() += line;
+		this->_response.getBody() += "\r\n";
 	}
 	file.close();
+	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
 }
 
 void Client::setBodyLength()

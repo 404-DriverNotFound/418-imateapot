@@ -127,7 +127,8 @@ void Webserver::readRequest(Client &client)
 	char	buff[BUF_SIZE];
 	int		len;
 
-	len = read(client.getFd(), buff, BUF_SIZE);
+	len = read(client.getFd(), buff, BUF_SIZE - 1);
+	buff[len] = '\0';
 	if (len < 0)
 		throw 503;
 	if (len == 0)
@@ -164,7 +165,7 @@ void Webserver::handleClientDone(std::map<int, int>& done_info)
 		if (rit->second != CLIENT_DONE_STATUS)
 		{
 			client->makeBasicHeader();
-			std::cout << "ERROR!!!!! " << rit->second << std::endl;
+			std::cout << "ERROR!!!!! " << rit->second << std::endl << std::endl;
 			client->makeErrorStatus(rit->second);
 			client->sendMsg();
 		}

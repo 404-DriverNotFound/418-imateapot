@@ -38,6 +38,8 @@ enum e_sock_status
 
 #define CLIENT_DONE_STATUS 1000
 
+class Webserver;
+
 class Client
 {
 	private:

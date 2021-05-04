@@ -27,6 +27,7 @@ $(NAME):		$(BUILDOBJS)
 clean:
 				$(RM) $(BUILDOBJS)
 				rm -rf $(BUILDDIR)
+				rm -rf .TMP_FILE*
 
 fclean:			clean
 				$(RM) $(NAME)
