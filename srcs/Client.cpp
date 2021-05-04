@@ -82,7 +82,6 @@ void Client::checkFilePath()
 	if (FT_S_ISDIR(path_stat.st_mode))
 		throw 404;
 	
-	// FIXME: location 블록에 index, autoindex가 없을 때, 404 error를 반환해야 하는데 root index, autoindex를 가지고 오는 현상이 발생. -> 수정 요망
 	this->_file_path = index_path;
 	this->_response.insertToHeader("Content-Length", ft_itos(path_stat.st_size));
 }
