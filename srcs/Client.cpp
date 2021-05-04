@@ -548,6 +548,7 @@ void Client::makeBasicHeader()
 	start_line.protocol = "HTTP/1.1";
 	this->_response.insertToHeader("Server", "418-IAmATeapot");
 	this->_response.insertToHeader("Date", getCurrentTime());
+	this->_response.insertToHeader("Content-Type", "text/plain");
 }
 
 /**
@@ -717,9 +718,6 @@ void Client::makeErrorStatus(uint16_t status)
 	default:
 		break ;
 	}
-
-	this->_response.insertToHeader("Content-Language", "ko");
-	this->_response.insertToHeader("Content-Type", "text/plain");
 
 	// TODO: 굳이 이렇게 Body 꼭 채워서 넣어야할까요?
 
