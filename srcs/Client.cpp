@@ -213,7 +213,16 @@ void Client::makePutMsg()
 	file.close();
 	std::string content_location = this->makeContentLocation();
 
-	this->_response.insertToHeader("Content-Location", content_location);
+	switch (this->_response.getStartLine().status_code)
+	{
+	case 201:
+		this->_response.insertToHeader("Location", content_location);
+		break;
+	
+	case 204:
+		this->_response.insertToHeader("Content-Location", content_location);
+		break;
+	}
 }
 
 void Client::makePostMsg()
@@ -297,6 +306,8 @@ void Client::execCGI()
 	char	*args[3];
 	char	buf[BUF_SIZE];
 	char	**env = this->setEnv();
+	bool	is_header_finished = false;
+	std::string temp_string;
 
 	this->_buffer.clear();
 
@@ -335,39 +346,52 @@ void Client::execCGI()
 	}
 	while ((ret = read(tmp_fd, buf, BUF_SIZE - 1)) > 0)
 	{
-		// FIXME: 헤더만 따고 나면 바로 바디로 어펜드 해버리기
-		// 그런데 어차피 리팩토링 하면서 다 뒤집어 엎어야 함
-		// 나중에 하자
-		// this->_buffer += buf;
 		buf[ret] = '\0';
-		this->_buffer.append(buf);
+		temp_string.append(buf);
+
+		if (!is_header_finished)
+			this->parseCGIBuffer(temp_string, is_header_finished);
+		if (is_header_finished)
+		{
+			std::cout << ft_ultohex(temp_string.length()) << std::endl;
+			this->_response.getBody() += ft_ultohex(temp_string.length());
+			this->_response.getBody() += "\r\n";
+			this->_response.getBody() += temp_string;
+			this->_response.getBody() += "\r\n";
+			temp_string.clear();
+		}
 	}
-	this->parseCGIBuffer();
+	close(tmp_fd);
+	unlink(tmp_name.c_str());
+	this->_response.getBody() += "0\r\n\r\n";
+	this->_response.insertToHeader("Content-Language", "ko");
+	this->_response.insertToHeader("Transfer-Encoding", "chunked");
+	this->_sock_status = SEND_MSG;
 }
 
-void Client::parseCGIBuffer()
+void Client::parseCGIBuffer(std::string &temp_string, bool &is_header_finished)
 {
 	std::string tmp;
 	size_t pos;
+	size_t index;
 
-	while ((pos = this->_buffer.find('\n')) != std::string::npos && this->_sock_status != RECV_BODY)
+	while ((pos = temp_string.find('\n')) != std::string::npos)
 	{
-		tmp = this->_buffer.substr(0, (this->_buffer[pos - 1] == '\r' ? pos - 1 : pos));
+		index = (pos ? (temp_string[pos - 1] == '\r' ? pos - 1 : pos) : pos);
+		tmp = temp_string.substr(0, index);
 		std::vector<std::string> split = ft_split(tmp, ':');
-		_buffer.erase(0, pos + 1);
-		if (tmp.length() == 0)
+		temp_string.erase(0, pos + 1);
+		if (tmp.empty())
+		{
+			is_header_finished = true;
 			break ;
+		}
 		ft_trim(split[1], " \t");
 		if (split[0] == "Status")
 			this->_response.getStartLine().status_code = ft_atoi(split[1]);
 		else
 			this->_response.insertToHeader(split[0], split[1]);
 	}
-	this->_response.getBody() = _buffer;
-	this->_response.getBody().erase(this->_response.getBody().length()); // EOF 삭제
-	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().length()));
-	this->_response.insertToHeader("Content-Language", "ko");
-	this->_response.insertToHeader("Content-Type", "text/plain");
 }
 
 /**
@@ -398,7 +422,10 @@ void Client::parseStartLine(const std::string &line)
 	std::vector<std::string> split = ft_split(line, ' '); // method, path, protocol
 	int method_num = methodToNum(split[0]);
 	if (method_num < 0)
+	{
+		std::cout << "1\n";
 		throw 400;
+	}
 	start_line.method = static_cast<e_method>(method_num);
 
 	std::vector<std::string> split_path = ft_split(split[1], '/');
@@ -415,7 +442,10 @@ void Client::parseStartLine(const std::string &line)
 		start_line.query_string = split_query[1];
 
 	if (split[2].find("HTTP/") == std::string::npos) // if protocol is not HTTP
+	{
+		std::cout << "2\n";
 		throw 400;
+	}
 	start_line.protocol = split[2];
 }
 
@@ -442,7 +472,10 @@ void Client::setClientResReady(ConfigGroup &group)
 	std::string host = this->_request.getHeaderValue("Host");
 
 	if (host.size() == 0)
+	{
+		std::cout << "3\n";
 		throw 400;
+	}
 
 	if (host.find(':') != std::string::npos)
 		host.erase(host.find(':'));
@@ -574,10 +607,23 @@ void Client::makeMsg()
 			throw 403;
 	}
 
-	if (!(this->_config_location->method[start_line.method]))
-		throw 405;
-
 	this->makeBasicHeader();
+
+	if (!(this->_config_location->method[start_line.method]))
+	{
+		switch (start_line.method)
+		{
+			case GET:
+			case POST:
+				if (this->isCGIRequest())
+				{
+					this->execCGI();
+					return;
+				}
+			default:
+				throw 405;
+		}
+	}
 
 	switch (start_line.method)
 	{
@@ -617,7 +663,7 @@ void Client::sendMsg()
  * parseBuffer
  * buffer에 저장된 response를 각 부분(startline/header/body)에 맞게 함수 호출
  */
-void Client::parseBuffer(char *buff, int len)
+void Client::parseBuffer(char *buff, int len, ConfigGroup &configs)
 {
 	std::string tmp;
 	size_t idx;
@@ -643,17 +689,24 @@ void Client::parseBuffer(char *buff, int len)
 		{
 			if (tmp.size() == 0)
 			{
+				this->setClientResReady(configs);
 				this->_sock_status = RECV_BODY;
 				std::string content_length_str = this->_request.getHeaderValue("Content-Length");
 				if (!content_length_str.empty())
 				{
 					if ((this->_content_length_left = ft_atoi(content_length_str)) == 0)
+					{
 						this->_sock_status = MAKE_MSG;
+						this->_buffer.erase(0, pos + 1);
+						return;
+					}
 				}
 				else if (this->_request.getHeaderValue("Transfer-Encoding").compare("chunked"))
+				{
 					this->_sock_status = MAKE_MSG;
-				this->_buffer.erase(0, pos + 1);
-				return ;
+					this->_buffer.erase(0, pos + 1);
+					return;
+				}
 			}
 			else
 				this->parseHeader(tmp);

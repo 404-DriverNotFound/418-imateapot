@@ -119,9 +119,9 @@ std::string ft_ultohex(unsigned long num)
 	while (num != 0)
 	{
 		tmp = num % 16;
-		tmp = (tmp >= 10 ? tmp + 'A' - 10 : tmp + '0');
+		tmp = (tmp >= 10 ? (tmp + 'A' - 10) : (tmp + '0'));
 		str = static_cast<char>(tmp) + str;
-		num /= 10;
+		num /= 16;
 	}
 	return (str);
 }

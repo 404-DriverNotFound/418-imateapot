@@ -143,21 +143,15 @@ int Webserver::readRequest(Client &client)
 		return CLIENT_END;
 	}
 	buff[len] = '\0';
-	std::cout << "=========READ=========\n" << buff << "=====================\n";
-	client.parseBuffer(buff, len);
-	if (client.getSockStatus() == RECV_BODY && !client.isConfigSet())
-		client.setClientResReady(this->_configs);
+	// std::cout << "=========READ=========\n" << buff << "=====================\n";
+	client.parseBuffer(buff, len, this->_configs);
 	return CLIENT_CONTINUE;
 }
 
 void Webserver::handleResponse(Client &client)
 {
 	if (client.getSockStatus() == MAKE_MSG)
-	{
-		if (!client.isConfigSet())
-			client.setClientResReady(this->_configs);
 		client.makeMsg();
-	}
 	else if (client.getSockStatus() == SEND_MSG)
 		client.sendMsg();
 }

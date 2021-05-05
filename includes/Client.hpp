@@ -66,7 +66,7 @@ class Client
 		bool isCGIRequest();
 		char **setEnv();
         void execCGI();
-		void parseCGIBuffer();
+		void parseCGIBuffer(std::string &temp_string, bool &is_header_finished);
 
 	public:
 		Client(Socket &socket);
@@ -79,7 +79,7 @@ class Client
 		void makeMsg();
 		void sendMsg();
 
-		void parseBuffer(char *buff, int len);
+		void parseBuffer(char *buff, int len, ConfigGroup &configs);
 
 		void makeBasicHeader();
 		void makeErrorStatus(uint16_t status);
