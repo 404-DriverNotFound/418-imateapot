@@ -55,7 +55,6 @@ void Client::checkFilePath()
 		this->_response.insertToHeader("Content-Length", ft_itos(path_stat.st_size));
 		return ;
 	}
-	// TODO: 로케이션 인덱스를 url의 경로를 바탕으로 탐색해야 함
 	// if _file_path is a dir
 	std::string root = config.root;
 
@@ -179,16 +178,9 @@ void Client::makeGetMsg()
 	// read
 	if (this->_config_location->autoindex == false)
 	{
-		file.open(this->_file_path.c_str());
-		while (!file.eof())
-		{
-			// FIXME: 이 getline도 read의 일종이니까 구조 바꿔야 함
-			getline(file, line);
-			this->_response.getBody() += line;
-			if (!file.eof())
-				this->_response.getBody() += "\n";
-		}
-		file.close();
+		this->_read_fd = open(this->_file_path.c_str(), O_RDONLY);
+		if (this->_read_fd == -1)
+			throw 503;
 	}
 }
 
@@ -300,9 +292,7 @@ void Client::execCGI()
 	int		ret, status, in_fd[2], tmp_fd;
 	pid_t	pid;
 	char	*args[3];
-	char	buf[BUF_SIZE];
 	char	**env = this->setEnv();
-	bool	is_header_finished = false;
 	std::string temp_string;
 
 	this->_buffer.clear();
@@ -316,6 +306,8 @@ void Client::execCGI()
 
 	if ((tmp_fd = open(tmp_name.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666)) == -1)
 		throw 500;
+
+	this->_sock_status = PROC_CGI_HEADER;
 
 	if (pid == 0)
 	{
@@ -332,7 +324,8 @@ void Client::execCGI()
 	{
 		close(in_fd[0]);
 		// FIXME: write, read는 모두 select를 거치도록 변경 
-		write(in_fd[1], this->_request.getBody().c_str(), this->_request.getBody().length());
+		// write(in_fd[1], this->_request.getBody().c_str(), this->_request.getBody().length());
+		this->_write_fd = in_fd[1];
 		close(in_fd[1]);
 		waitpid(pid, &status, 0);
 		if (WIFEXITED(status) == 0)
@@ -340,45 +333,27 @@ void Client::execCGI()
 		free(args[0]);
 		free(args[1]);
 	}
-	while ((ret = read(tmp_fd, buf, BUF_SIZE - 1)) > 0)
-	{
-		buf[ret] = '\0';
-		temp_string.append(buf);
+	//TODO: env free
+	this->_read_fd = tmp_fd;
 
-		if (!is_header_finished)
-			this->parseCGIBuffer(temp_string, is_header_finished);
-		if (is_header_finished)
-		{
-			this->_response.getBody() += ft_ultohex(temp_string.length());
-			this->_response.getBody() += "\r\n";
-			this->_response.getBody() += temp_string;
-			this->_response.getBody() += "\r\n";
-			temp_string.clear();
-		}
-	}
-	close(tmp_fd);
-	unlink(tmp_name.c_str());
-	this->_response.getBody() += "0\r\n\r\n";
-	this->_response.insertToHeader("Content-Language", "ko");
-	this->_response.insertToHeader("Transfer-Encoding", "chunked");
-	this->_sock_status = SEND_MSG;
 }
 
-void Client::parseCGIBuffer(std::string &temp_string, bool &is_header_finished)
+void Client::parseCGIBuffer()
 {
+	std::string &body = this->_response.getBody();
 	std::string tmp;
 	size_t pos;
 	size_t index;
 
-	while ((pos = temp_string.find('\n')) != std::string::npos)
+	while ((pos = body.find('\n')) != std::string::npos)
 	{
-		index = (pos ? (temp_string[pos - 1] == '\r' ? pos - 1 : pos) : pos);
-		tmp = temp_string.substr(0, index);
+		index = (pos ? (body[pos - 1] == '\r' ? pos - 1 : pos) : pos);
+		tmp = body.substr(0, index);
 		std::vector<std::string> split = ft_split(tmp, ':');
-		temp_string.erase(0, pos + 1);
+		body.erase(0, pos + 1);
 		if (tmp.empty())
 		{
-			is_header_finished = true;
+			this->_sock_status = PROC_CGI_BODY;
 			break ;
 		}
 		ft_trim(split[1], " \t");
@@ -397,6 +372,8 @@ void Client::parseCGIBuffer(std::string &temp_string, bool &is_header_finished)
 Client::Client(Socket &socket, int fd):
 	_port(socket.getPort()),
 	_fd(fd),
+	_read_fd(-1),
+	_write_fd(-1),
 	_content_length_left(EMPTY_CONTENT_LENGTH),
 	_chunked_length(CHUNKED_READY),
 	_sock_status(INITIALIZE),
@@ -582,7 +559,7 @@ void Client::makeMsg()
 
 	std::cout << start_line << std::endl;
 
-	this->_sock_status = SEND_MSG;
+	this->_sock_status = MAKE_MSG;
 
 	if (!this->_config_location->auth.empty())
 	{
@@ -657,7 +634,7 @@ void Client::parseBuffer(char *buff, int len, ConfigGroup &configs)
 	size_t pos;
 
 	// 이미 모두 다 받았을때 입력된 내용 버리기
-	if (this->_sock_status >= MAKE_MSG)
+	if (this->_sock_status >= MAKE_READY)
 		return ;
 
 	this->_buffer.append(buff, len);
@@ -683,14 +660,14 @@ void Client::parseBuffer(char *buff, int len, ConfigGroup &configs)
 				{
 					if ((this->_content_length_left = ft_atoi(content_length_str)) == 0)
 					{
-						this->_sock_status = MAKE_MSG;
+						this->_sock_status = MAKE_READY;
 						this->_buffer.erase(0, pos + 1);
 						return;
 					}
 				}
 				else if (this->_request.getHeaderValue("Transfer-Encoding").compare("chunked"))
 				{
-					this->_sock_status = MAKE_MSG;
+					this->_sock_status = MAKE_READY;
 					this->_buffer.erase(0, pos + 1);
 					return;
 				}
@@ -706,7 +683,7 @@ void Client::parseBuffer(char *buff, int len, ConfigGroup &configs)
 		{
 			if (this->_request.getBody().length() > this->_config_location->body_length)
 				throw 405;
-			this->_sock_status = MAKE_MSG;
+			this->_sock_status = MAKE_READY;
 		}
 	}
 }
@@ -726,9 +703,6 @@ void Client::makeErrorStatus(uint16_t status)
 
 	start_line.status_code = status;
 
-	/**
-	 * TODO: 408(Request Timeout)
-	 */
 	switch (status)
 	{
 	case 400:
@@ -758,8 +732,6 @@ void Client::makeErrorStatus(uint16_t status)
 	default:
 		break ;
 	}
-
-	// TODO: 굳이 이렇게 Body 꼭 채워서 넣어야할까요?
 
 	if (!this->isConfigSet())
 	{
@@ -793,17 +765,44 @@ void Client::makeErrorStatus(uint16_t status)
 	close(fd);
 
 	this->_file_path = error_path;
+
+	this->_read_fd = open(this->_file_path.c_str(), O_RDONLY);
+	if (this->_read_fd == -1)
+		throw 503;
+}
+
+void Client::readData(fd_set &fd_read_set)
+{
+	int len;
+	char buf[BUF_SIZE];
+
+
+	len = read(this->_read_fd, buf, BUF_SIZE - 1);
 	
-	file.open(this->_file_path.c_str());
-	while (!file.eof())
+	if (len < 0)
+		throw 503;
+	
+	if (len == 0)
 	{
-		getline(file, line);
-		this->_response.getBody() += line;
-		if (!file.eof())
-			this->_response.getBody() += "\r\n";
+		close(this->_read_fd);
+		FT_FD_CLR(this->_read_fd, &fd_read_set);
+		this->_read_fd = -1;
+		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().length()));
+		this->_response.insertToHeader("Content-Language", "ko");
+		this->_sock_status = SEND_MSG;
+		return ;
 	}
-	file.close();
-	this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
+	
+	buf[len] = '\0';
+	this->_response.getBody() += buf;
+
+	if (this->_sock_status == PROC_CGI_HEADER)
+		this->parseCGIBuffer();
+}
+
+void Client::writeData()
+{
+
 }
 
 bool Client::isConfigSet()
@@ -827,6 +826,16 @@ int Client::getFd()
 	return this->_fd;
 }
 
+int Client::getReadFd()
+{
+	return this->_read_fd;
+}
+
+int Client::getWriteFd()
+{
+	return this->_write_fd;
+}
+
 e_sock_status Client::getSockStatus()
 {
 	return this->_sock_status;
@@ -840,6 +849,16 @@ bool Client::getIsReadFinished()
 void Client::setIsReadFinished(bool is_read_finished)
 {
 	this->_is_read_finished = is_read_finished;
+}
+
+void Client::setReadFd(int fd)
+{
+	this->_read_fd = fd;
+}
+
+void Client::setWriteFd(int fd)
+{
+	this->_write_fd = fd;
 }
 
 const char *Client::SocketAcceptException::what() const throw()

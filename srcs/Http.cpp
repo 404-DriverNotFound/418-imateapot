@@ -78,7 +78,7 @@ void HttpResponse::sendHeader(int fd)
 
 void HttpResponse::sendBody(int fd)
 {
-	// std::cout << this->_body;
+	std::cout << this->_body;
 	write(fd, this->_body.c_str(), this->_body.length());
 }
 

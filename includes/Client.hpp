@@ -21,6 +21,9 @@ enum e_sock_status
 	RECV_START_LINE,
 	RECV_HEADER,
 	RECV_BODY,
+	MAKE_READY,
+	PROC_CGI_HEADER,
+	PROC_CGI_BODY,
 	MAKE_MSG,
 	SEND_MSG,
 	SEND_DONE
@@ -43,6 +46,8 @@ class Client
 	private:
 		uint16_t		_port;
 		int				_fd;
+		int				_read_fd;
+		int				_write_fd;
 		int				_content_length_left;
 		int				_chunked_length;
 		std::string		_buffer;
@@ -67,7 +72,7 @@ class Client
 		bool isCGIRequest();
 		char **setEnv();
         void execCGI();
-		void parseCGIBuffer(std::string &temp_string, bool &is_header_finished);
+		void parseCGIBuffer();
 
 	public:
 		Client(Socket &socket, int fd);
@@ -85,14 +90,22 @@ class Client
 		void makeBasicHeader();
 		void makeErrorStatus(uint16_t status);
 
+		void readData(fd_set &fd_read_set);
+		void writeData();
+
 		bool isConfigSet();
 		void reset();
 
 		int				getFd();
+		int				getReadFd();
+		int				getWriteFd();
+
 		e_sock_status	getSockStatus();
 		bool			getIsReadFinished();
 
 		void			setIsReadFinished(bool is_read_finished);
+		void			setReadFd(int fd);
+		void			setWriteFd(int fd);
 		
 
 		class SocketAcceptException: public std::exception

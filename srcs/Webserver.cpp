@@ -119,6 +119,28 @@ void Webserver::startServer()
 				}
 			}
 			this->handleClientDone(done_info);
+
+			for (unsigned long i = 0; i < this->_clients.size(); i++)
+			{
+				if (this->_clients[i].getReadFd() == -1)
+					continue;
+
+				if (!FT_FD_ISSET(this->_clients[i].getReadFd(), &(this->_fd_read)))
+					FT_FD_SET(this->_clients[i].getReadFd(), &(this->_fd_read));
+
+				if (!FT_FD_ISSET(this->_clients[i].getReadFd(), &(temp_fd_read)))
+					continue;
+				
+				try
+				{
+					this->_clients[i].readData(this->_fd_read);
+				}
+				catch (int error_status)
+				{
+					done_info.insert(std::make_pair<int, int>(i, error_status));
+				}
+			}
+			this->handleClientDone(done_info);
 		}
 	}
 }
@@ -150,7 +172,7 @@ int Webserver::readRequest(Client &client)
 
 void Webserver::handleResponse(Client &client)
 {
-	if (client.getSockStatus() == MAKE_MSG)
+	if (client.getSockStatus() == MAKE_READY)
 		client.makeMsg();
 	else if (client.getSockStatus() == SEND_MSG)
 		client.sendMsg();
