@@ -17,8 +17,11 @@ void Client::makeFilePath()
 		std::string dir_path = path.substr(config.location_path.length());
 		this->_file_path.append(dir_path);
 	}
-	else if (path.length() > 1)
+	else
 		this->_file_path.append(path);
+
+	if (this->_file_path[this->_file_path.length() - 1] == '/')
+		this->_file_path.erase(this->_file_path.length() - 1);
 }
 
 /**
@@ -152,7 +155,6 @@ void Client::makeHeadMsg()
 
 void Client::makeGetMsg()
 {
-
 	std::ifstream file;
 	struct stat info;
 	std::string line;
@@ -180,6 +182,7 @@ void Client::makeGetMsg()
 		file.open(this->_file_path.c_str());
 		while (!file.eof())
 		{
+			// FIXME: 이 getline도 read의 일종이니까 구조 바꿔야 함
 			getline(file, line);
 			this->_response.getBody() += line;
 			if (!file.eof())
@@ -209,20 +212,13 @@ void Client::makePutMsg()
 		this->_response.getStartLine().status_code = 201;
 	}
 
+	// FIXME: 이것도 write의 일종이니까 구조 바꿔야 함
 	file << content;
 	file.close();
 	std::string content_location = this->makeContentLocation();
 
-	switch (this->_response.getStartLine().status_code)
-	{
-	case 201:
-		this->_response.insertToHeader("Location", content_location);
-		break;
-	
-	case 204:
-		this->_response.insertToHeader("Content-Location", content_location);
-		break;
-	}
+	this->_response.insertToHeader("Location", content_location);
+	this->_response.insertToHeader("Content-Location", content_location);
 }
 
 void Client::makePostMsg()
@@ -353,7 +349,6 @@ void Client::execCGI()
 			this->parseCGIBuffer(temp_string, is_header_finished);
 		if (is_header_finished)
 		{
-			std::cout << ft_ultohex(temp_string.length()) << std::endl;
 			this->_response.getBody() += ft_ultohex(temp_string.length());
 			this->_response.getBody() += "\r\n";
 			this->_response.getBody() += temp_string;
@@ -399,8 +394,9 @@ void Client::parseCGIBuffer(std::string &temp_string, bool &is_header_finished)
  * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
  * @param  {Socket &socket} : class Socket
  */
-Client::Client(Socket &socket):
+Client::Client(Socket &socket, int fd):
 	_port(socket.getPort()),
+	_fd(fd),
 	_content_length_left(EMPTY_CONTENT_LENGTH),
 	_chunked_length(CHUNKED_READY),
 	_sock_status(INITIALIZE),
@@ -422,10 +418,7 @@ void Client::parseStartLine(const std::string &line)
 	std::vector<std::string> split = ft_split(line, ' '); // method, path, protocol
 	int method_num = methodToNum(split[0]);
 	if (method_num < 0)
-	{
-		std::cout << "1\n";
 		throw 400;
-	}
 	start_line.method = static_cast<e_method>(method_num);
 
 	std::vector<std::string> split_path = ft_split(split[1], '/');
@@ -442,10 +435,7 @@ void Client::parseStartLine(const std::string &line)
 		start_line.query_string = split_query[1];
 
 	if (split[2].find("HTTP/") == std::string::npos) // if protocol is not HTTP
-	{
-		std::cout << "2\n";
 		throw 400;
-	}
 	start_line.protocol = split[2];
 }
 
@@ -472,10 +462,7 @@ void Client::setClientResReady(ConfigGroup &group)
 	std::string host = this->_request.getHeaderValue("Host");
 
 	if (host.size() == 0)
-	{
-		std::cout << "3\n";
 		throw 400;
-	}
 
 	if (host.find(':') != std::string::npos)
 		host.erase(host.find(':'));
@@ -527,10 +514,10 @@ int	Client::parseBody()
 		{
 			this->_content_length_left -= this->_buffer.length();
 			this->_request.getBody() += this->_buffer;
+			this->_buffer.clear();
 		}
 		if (this->_content_length_left <= 0)
 			return PARSE_BODY_END;
-		this->_buffer.clear();
 	}
 	else
 	{
@@ -837,7 +824,7 @@ void Client::reset()
 
 int Client::getFd()
 {
-	return this->_socket->getClientFd();
+	return this->_fd;
 }
 
 e_sock_status Client::getSockStatus()

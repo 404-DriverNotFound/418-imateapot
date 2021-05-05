@@ -62,23 +62,23 @@ void Webserver::startServer()
 			for (size_t i = 0; i < this->_socks.size(); i++)
 				if (FT_FD_ISSET(this->_socks[i].getSockFd(), &(temp_fd_read)))
 				{
+					int			fd;
 					try
 					{
 						sockaddr	tmp;
 						socklen_t	socksize = sizeof(sockaddr_in);
 
-						this->_socks[i].setClientFd(accept(this->_socks[i].getSockFd(), &tmp, &socksize));
-						if (this->_socks[i].getClientFd() == -1)
+						if ((fd = accept(this->_socks[i].getSockFd(), &tmp, &socksize)) == -1)
 							throw Client::SocketAcceptException();
-						this->_clients.push_back(Client(this->_socks[i]));
+						this->_clients.push_back(Client(this->_socks[i], fd));
 					}
 					catch(const std::exception& e)
 					{
 						std::cerr << e.what() << '\n';
 						break ;
 					}
-					FT_FD_SET(this->_socks[i].getClientFd(), &(this->_fd_read));
-					FT_FD_SET(this->_socks[i].getClientFd(), &(this->_fd_write));
+					FT_FD_SET(fd, &(this->_fd_read));
+					FT_FD_SET(fd, &(this->_fd_write));
 				}
 
 			for (unsigned long i = 0; i < this->_clients.size(); i++)
@@ -178,7 +178,7 @@ void Webserver::handleClientDone(std::map<int, int>& done_info)
 			close(client->getFd());
 			this->_clients.erase(client);
 		}
-		else
+		else if (client->getSockStatus() == SEND_DONE)
 			client->reset();
 	}
 	done_info.clear();

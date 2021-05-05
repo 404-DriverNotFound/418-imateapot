@@ -42,6 +42,7 @@ class Client
 {
 	private:
 		uint16_t		_port;
+		int				_fd;
 		int				_content_length_left;
 		int				_chunked_length;
 		std::string		_buffer;
@@ -69,7 +70,7 @@ class Client
 		void parseCGIBuffer(std::string &temp_string, bool &is_header_finished);
 
 	public:
-		Client(Socket &socket);
+		Client(Socket &socket, int fd);
 
 		void parseStartLine(const std::string &);
 		void parseHeader(const std::string &);

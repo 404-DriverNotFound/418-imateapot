@@ -27,11 +27,6 @@ int Socket::getSockFd()
 	return this->_sock_fd;
 }
 
-int Socket::getClientFd()
-{
-	return this->_client_fd;
-}
-
 int Socket::getPort()
 {
 	return this->_port;
@@ -40,11 +35,6 @@ int Socket::getPort()
 std::string Socket::getIp()
 {
 	return this->_ip;
-}
-
-void Socket::setClientFd(int fd)
-{
-	this->_client_fd = fd;
 }
 
 const char *Socket::SocketCreationException::what() const throw()
