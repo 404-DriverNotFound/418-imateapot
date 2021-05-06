@@ -196,7 +196,7 @@ void Webserver::handleResponse(Client &client)
 {
 	if (client.getSockStatus() == MAKE_READY)
 		client.makeMsg();
-	else if (client.getSockStatus() == SEND_MSG)
+	else if (client.getSockStatus() == SEND_HEADER || client.getSockStatus() == SEND_BODY)
 		client.sendMsg();
 }
 

@@ -7,6 +7,9 @@
 #include <deque>
 #include <unistd.h>
 
+#define SEND_BODY_DONE 1
+#define SEND_BODY_LEFT 0
+
 struct StartLine
 {
 	std::string protocol;
@@ -33,6 +36,7 @@ class Http
 
 	public:
 		void insertToHeader(const std::string &, const std::string &);
+		std::map<std::string, std::string> &getHeaders();
 		std::string getHeaderValue(const std::string &);
 		std::string &getBody();
 };
@@ -54,7 +58,7 @@ class HttpResponse : public Http
 	public:
 		void sendStartLine(int fd);
 		void sendHeader(int fd);
-		void sendBody(int fd);
+		int sendBody(int fd);
 		StartLineRes &getStartLine();
 };
 

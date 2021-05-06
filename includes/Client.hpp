@@ -25,7 +25,8 @@ enum e_sock_status
 	PROC_CGI_HEADER,
 	PROC_CGI_BODY,
 	MAKE_MSG,
-	SEND_MSG,
+	SEND_HEADER,
+	SEND_BODY,
 	SEND_DONE
 };
 

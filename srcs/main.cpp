@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv)
 {
-	uint32_t max_connection = 20;
+	uint32_t max_connection = 200;
 	if (argc == 3)
 		max_connection = ft_atoi(argv[2]);
 	if (argc < 2 || argc > 3)

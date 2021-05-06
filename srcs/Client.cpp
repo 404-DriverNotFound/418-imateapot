@@ -269,6 +269,13 @@ char **Client::setEnv()
 	map_env["SERVER_PROTOCOL"] = "HTTP/1.1";
 	map_env["SERVER_SOFTWARE"] = "418-IAmATeapot";
 
+	std::map<std::string, std::string>::iterator hit = this->_request.getHeaders().begin();
+	std::map<std::string, std::string>::iterator hite = this->_request.getHeaders().end();
+	for (; hit != hite; hit++)
+	{
+		map_env["HTTP_" + hit->first] = hit->second;
+	}
+
 	if (!(env = (char **)malloc(sizeof(char *) * (map_env.size() + 1))))
 		throw 500;
 	std::map<std::string, std::string>::iterator it = map_env.begin();
@@ -610,13 +617,19 @@ void Client::makeMsg()
 
 void Client::sendMsg()
 {
-	std::cout << "========WRITE=======\n";
-	this->_response.sendStartLine(this->getFd());
-	this->_response.sendHeader(this->getFd());
-	if (!this->_response.getBody().empty())
-		this->_response.sendBody(this->getFd());
-	std::cout << "=====================\n";
-	this->_sock_status = SEND_DONE;
+	if (this->_sock_status == SEND_HEADER)
+	{
+		std::cout << "========WRITE=======\n";
+		this->_response.sendHeader(this->getFd());
+		this->_sock_status = (this->_response.getBody().empty() ? SEND_DONE : SEND_BODY);
+	}
+	else
+	{
+		if (this->_response.sendBody(this->getFd()) == SEND_BODY_DONE)
+			this->_sock_status = SEND_DONE;
+	}
+	if (this->_sock_status == SEND_DONE)
+		std::cout << "=====================\n";
 }
 
 /**
@@ -678,7 +691,7 @@ void Client::parseBuffer(char *buff, int len, ConfigGroup &configs)
 		if (this->parseBody() == PARSE_BODY_END) // 받는 과정 끝났을 때!
 		{
 			if (this->_request.getBody().length() > this->_config_location->body_length)
-				throw 405;
+				throw 413;
 			this->_sock_status = MAKE_READY;
 		}
 	}
@@ -735,7 +748,7 @@ void Client::makeErrorStatus(uint16_t status)
 		this->_response.getBody() += " ";
 		this->_response.getBody() += getStatusStr(status);
 		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
-		this->_sock_status = SEND_MSG;
+		this->_sock_status = SEND_HEADER;
 		return ;
 	}
 
@@ -757,7 +770,7 @@ void Client::makeErrorStatus(uint16_t status)
 		this->_response.getBody() += " ";
 		this->_response.getBody() += getStatusStr(status);
 		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
-		this->_sock_status = SEND_MSG;
+		this->_sock_status = SEND_HEADER;
 		return ;
 	}
 	close(fd);
@@ -795,7 +808,12 @@ void Client::readData(fd_set &fd_read_set)
 		this->_read_fd = -1;
 		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().length()));
 		this->_response.insertToHeader("Content-Language", "ko");
-		this->_sock_status = SEND_MSG;
+		if (this->_sock_status == PROC_CGI_BODY)
+		{
+			std::string name = ".TMP_FILE" + ft_itos(getFd());
+			unlink(name.c_str());
+		}
+		this->_sock_status = SEND_HEADER;
 		return ;
 	}
 	
@@ -817,7 +835,7 @@ void Client::writeData(fd_set &fd_write_set)
 	close(this->_write_fd);
 	this->_write_fd = -1;
 	if (this->_sock_status == MAKE_MSG)
-		this->_sock_status = SEND_MSG;
+		this->_sock_status = SEND_HEADER;
 }
 
 bool Client::isConfigSet()
