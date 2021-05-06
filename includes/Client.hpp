@@ -44,6 +44,7 @@ class Webserver;
 class Client
 {
 	private:
+		pid_t			_pid;
 		uint16_t		_port;
 		int				_fd;
 		int				_read_fd;
@@ -72,6 +73,7 @@ class Client
 		bool isCGIRequest();
 		char **setEnv();
         void execCGI();
+		void freeEnv(char **env);
 		void parseCGIBuffer();
 
 	public:
@@ -91,10 +93,10 @@ class Client
 		void makeErrorStatus(uint16_t status);
 
 		void readData(fd_set &fd_read_set);
-		void writeData();
+		void writeData(fd_set &fd_write_set);
 
 		bool isConfigSet();
-		void reset();
+		void reset(fd_set &fd_read_set, fd_set &fd_write_set);
 
 		int				getFd();
 		int				getReadFd();

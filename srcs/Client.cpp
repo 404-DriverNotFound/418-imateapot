@@ -186,27 +186,24 @@ void Client::makeGetMsg()
 
 void Client::makePutMsg()
 {
-	std::ofstream file;
-	std::string &content = this->_request.getBody();
+	int		fd;
 
 	if (isFilePath(_file_path))
 	{
-		file.open(_file_path.c_str());
-		if (file.is_open() == false)
+		fd = open(_file_path.c_str(), O_WRONLY | O_TRUNC, 0666);
+		if (fd == -1)
 			throw 403;
 		this->_response.getStartLine().status_code = 204;
 	}
 	else
 	{
-		file.open(_file_path.c_str(), std::ofstream::out | std::ofstream::trunc);
-		if (file.is_open() == false)
-			throw 403;
+		fd = open(_file_path.c_str(), O_CREAT | O_WRONLY, 0666);
+		if (fd == -1)
+			throw 503;
 		this->_response.getStartLine().status_code = 201;
+		this->_response.insertToHeader("Content-Length", "0");
 	}
-
-	// FIXME: 이것도 write의 일종이니까 구조 바꿔야 함
-	file << content;
-	file.close();
+	this->_write_fd = fd;
 	std::string content_location = this->makeContentLocation();
 
 	this->_response.insertToHeader("Location", content_location);
@@ -289,8 +286,7 @@ char **Client::setEnv()
 void Client::execCGI()
 {
 	std::string tmp_name = ".TMP_FILE" + ft_itos(getFd());
-	int		ret, status, in_fd[2], tmp_fd;
-	pid_t	pid;
+	int		ret, in_fd[2], tmp_fd;
 	char	*args[3];
 	char	**env = this->setEnv();
 	std::string temp_string;
@@ -301,7 +297,7 @@ void Client::execCGI()
 	args[1] = strdup(this->_file_path.c_str());
 	args[2] = NULL;
 
-	if ((pipe(in_fd) == -1) || ((pid = fork()) == -1))
+	if ((pipe(in_fd) == -1) || ((this->_pid = fork()) == -1))
 		throw 500;
 
 	if ((tmp_fd = open(tmp_name.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666)) == -1)
@@ -309,7 +305,7 @@ void Client::execCGI()
 
 	this->_sock_status = PROC_CGI_HEADER;
 
-	if (pid == 0)
+	if (this->_pid == 0)
 	{
 		close(in_fd[1]);
 		dup2(in_fd[0], 0);
@@ -320,22 +316,21 @@ void Client::execCGI()
 		close(in_fd[0]);
 		exit(ret);
 	}
-	else
-	{
-		close(in_fd[0]);
-		// FIXME: write, read는 모두 select를 거치도록 변경 
-		// write(in_fd[1], this->_request.getBody().c_str(), this->_request.getBody().length());
-		this->_write_fd = in_fd[1];
-		close(in_fd[1]);
-		waitpid(pid, &status, 0);
-		if (WIFEXITED(status) == 0)
-			throw 500;
-		free(args[0]);
-		free(args[1]);
-	}
-	//TODO: env free
+	free(args[0]);
+	free(args[1]);
+	close(in_fd[0]);
+	this->_write_fd = in_fd[1];
 	this->_read_fd = tmp_fd;
+	this->freeEnv(env);
+}
 
+void Client::freeEnv(char **env)
+{
+	int i = 0;
+
+	while (env[i])
+		free(env[i++]);
+	free(env);
 }
 
 void Client::parseCGIBuffer()
@@ -369,7 +364,8 @@ void Client::parseCGIBuffer()
  * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
  * @param  {Socket &socket} : class Socket
  */
-Client::Client(Socket &socket, int fd):
+Client::Client(Socket &socket, int fd):	
+	_pid(-1),
 	_port(socket.getPort()),
 	_fd(fd),
 	_read_fd(-1),
@@ -739,6 +735,7 @@ void Client::makeErrorStatus(uint16_t status)
 		this->_response.getBody() += " ";
 		this->_response.getBody() += getStatusStr(status);
 		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
+		this->_sock_status = SEND_MSG;
 		return ;
 	}
 
@@ -760,6 +757,7 @@ void Client::makeErrorStatus(uint16_t status)
 		this->_response.getBody() += " ";
 		this->_response.getBody() += getStatusStr(status);
 		this->_response.insertToHeader("Content-Length", ft_itos(this->_response.getBody().size()));
+		this->_sock_status = SEND_MSG;
 		return ;
 	}
 	close(fd);
@@ -773,9 +771,17 @@ void Client::makeErrorStatus(uint16_t status)
 
 void Client::readData(fd_set &fd_read_set)
 {
-	int len;
+	int len, status;
 	char buf[BUF_SIZE];
 
+	if (this->_sock_status == PROC_CGI_HEADER && this->_pid != -1)
+	{
+		if (!waitpid(this->_pid, &status, WNOHANG))
+			return ;
+		if (WIFEXITED(status) == 0)
+			throw 500;
+		this->_pid = -1;
+	}
 
 	len = read(this->_read_fd, buf, BUF_SIZE - 1);
 	
@@ -800,9 +806,18 @@ void Client::readData(fd_set &fd_read_set)
 		this->parseCGIBuffer();
 }
 
-void Client::writeData()
+void Client::writeData(fd_set &fd_write_set)
 {
-
+	int ret;
+	
+	ret = write(this->_write_fd, this->_request.getBody().c_str(), this->_request.getBody().length());
+	if (ret == -1)
+		throw 503;
+	FT_FD_CLR(this->_write_fd, &(fd_write_set));
+	close(this->_write_fd);
+	this->_write_fd = -1;
+	if (this->_sock_status == MAKE_MSG)
+		this->_sock_status = SEND_MSG;
 }
 
 bool Client::isConfigSet()
@@ -810,8 +825,19 @@ bool Client::isConfigSet()
 	return (this->_config_location != NULL);
 }
 
-void Client::reset()
+void Client::reset(fd_set &fd_read_set, fd_set &fd_write_set)
 {
+	this->_pid = -1;
+	if (this->_read_fd != -1)
+	{
+		FT_FD_CLR(this->_read_fd, &(fd_read_set));
+		this->_read_fd = -1;
+	}
+	if (this->_write_fd != -1)
+	{
+		FT_FD_CLR(this->_write_fd, &(fd_write_set));
+		this->_write_fd = -1;
+	}
 	this->_content_length_left = EMPTY_CONTENT_LENGTH;
 	this->_chunked_length = CHUNKED_READY;
 	this->_sock_status = INITIALIZE;

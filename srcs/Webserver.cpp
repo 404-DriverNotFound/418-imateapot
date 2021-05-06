@@ -141,6 +141,28 @@ void Webserver::startServer()
 				}
 			}
 			this->handleClientDone(done_info);
+
+			for (unsigned long i = 0; i < this->_clients.size(); i++)
+			{
+				if (this->_clients[i].getWriteFd() == -1)
+					continue;
+
+				if (!FT_FD_ISSET(this->_clients[i].getWriteFd(), &(this->_fd_write)))
+					FT_FD_SET(this->_clients[i].getWriteFd(), &(this->_fd_write));
+
+				if (!FT_FD_ISSET(this->_clients[i].getWriteFd(), &(temp_fd_write)))
+					continue;
+				
+				try
+				{
+					this->_clients[i].writeData(this->_fd_write);
+				}
+				catch (int error_status)
+				{
+					done_info.insert(std::make_pair<int, int>(i, error_status));
+				}
+			}
+			this->handleClientDone(done_info);
 		}
 	}
 }
@@ -191,17 +213,19 @@ void Webserver::handleClientDone(std::map<int, int>& done_info)
 			client->makeBasicHeader();
 			std::cout << "ERROR!!!!! " << rit->second << std::endl << std::endl;
 			client->makeErrorStatus(rit->second);
-			client->sendMsg();
 		}
-		if (rit->second == CLIENT_DONE_STATUS && client->getIsReadFinished())
+		else
 		{
-			FT_FD_CLR(client->getFd(), &(this->_fd_read));
-			FT_FD_CLR(client->getFd(), &(this->_fd_write));
-			close(client->getFd());
-			this->_clients.erase(client);
+			if (client->getIsReadFinished())
+			{
+				FT_FD_CLR(client->getFd(), &(this->_fd_read));
+				FT_FD_CLR(client->getFd(), &(this->_fd_write));
+				close(client->getFd());
+				this->_clients.erase(client);
+			}
+			else
+				client->reset(this->_fd_read, this->_fd_write);
 		}
-		else if (client->getSockStatus() == SEND_DONE)
-			client->reset();
 	}
 	done_info.clear();
 }
