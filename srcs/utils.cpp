@@ -74,13 +74,13 @@ int	ft_atoi(const std::string &str)
 	long long result = 0;
 	int minus_flag = 1, index = 0;
 
-	if (!str.empty() && (str[index] == '+' || str[index] == '-'))
+	if (!str.empty() && (str[index] == '+' || str[index] == '-') && static_cast<int>(str.length()) > index)
 	{
 		if (str[index] == '-')
 			minus_flag = -1;
 		index++;
 	}
-	while ('0' <= str[index] && str[index] <= '9')
+	while ('0' <= str[index] && str[index] <= '9' && static_cast<int>(str.length()) > index)
 	{
 		result *= 10;
 		result += (str[index] - '0');
@@ -119,9 +119,9 @@ std::string ft_ultohex(unsigned long num)
 	while (num != 0)
 	{
 		tmp = num % 16;
-		tmp = (tmp >= 10 ? tmp + 'A' - 10 : tmp + '0');
+		tmp = (tmp >= 10 ? (tmp + 'A' - 10) : (tmp + '0'));
 		str = static_cast<char>(tmp) + str;
-		num /= 10;
+		num /= 16;
 	}
 	return (str);
 }
@@ -137,9 +137,9 @@ unsigned long	ft_uhextol(const std::string &str)
 	unsigned long	result = 0;
 	int				index = 0;
 
-	while (('0' <= str[index] && str[index] <= '9') ||
+	while ((('0' <= str[index] && str[index] <= '9') ||
 			('A' <= str[index] && str[index] <= 'F') ||
-			('a' <= str[index] && str[index] <= 'f'))
+			('a' <= str[index] && str[index] <= 'f')) && static_cast<int>(str.length()) > index )
 	{
 		result *= 16;
 		if (str[index] <= '9')
@@ -206,6 +206,8 @@ std::string getStatusStr(uint16_t code)
             return ("OK");
         case 201:
             return ("Created");
+        case 202:
+            return ("Accepted");
 		case 204:
 			return ("No Content");
         case 400:

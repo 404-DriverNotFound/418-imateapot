@@ -21,10 +21,12 @@ enum e_sock_status
 	RECV_START_LINE,
 	RECV_HEADER,
 	RECV_BODY,
-	RECV_END,
+	MAKE_READY,
+	PROC_CGI_HEADER,
+	PROC_CGI_BODY,
 	MAKE_MSG,
-	PROC_CGI,
-	SEND_MSG,
+	SEND_HEADER,
+	SEND_BODY,
 	SEND_DONE
 };
 
@@ -43,10 +45,12 @@ class Webserver;
 class Client
 {
 	private:
-		int				_fd;
+		pid_t			_pid;
 		uint16_t		_port;
+		int				_fd;
+		int				_read_fd;
+		int				_write_fd;
 		int				_content_length_left;
-		int				_body_length_left;
 		int				_chunked_length;
 		std::string		_buffer;
 		e_sock_status	_sock_status;
@@ -55,24 +59,26 @@ class Client
 		std::string		_file_path;
 		Config			*_config_location;
 		Socket			*_socket;
+		bool			_is_read_finished;
 
 		void makeFilePath();
 		void checkFilePath();
 		std::string makeContentLocation();
+		std::string makeAutoindex();
 
 		void makeHeadMsg();
 		void makeGetMsg();
-		std::string autoindex();
 		void makePutMsg();
 		void makePostMsg();
 
 		bool isCGIRequest();
 		char **setEnv();
         void execCGI();
+		void freeEnv(char **env);
 		void parseCGIBuffer();
 
 	public:
-		Client(Socket &socket);
+		Client(Socket &socket, int fd);
 
 		void parseStartLine(const std::string &);
 		void parseHeader(const std::string &);
@@ -82,16 +88,27 @@ class Client
 		void makeMsg();
 		void sendMsg();
 
-		void parseBuffer(char *buff, int len);
-		void parseLastBuffer();
+		void parseBuffer(char *buff, int len, ConfigGroup &configs);
 
 		void makeBasicHeader();
 		void makeErrorStatus(uint16_t status);
 
-		void setBodyLength();
+		void readData(fd_set &fd_read_set);
+		void writeData(fd_set &fd_write_set);
+
+		bool isConfigSet();
+		void reset(fd_set &fd_read_set, fd_set &fd_write_set);
 
 		int				getFd();
+		int				getReadFd();
+		int				getWriteFd();
+
 		e_sock_status	getSockStatus();
+		bool			getIsReadFinished();
+
+		void			setIsReadFinished(bool is_read_finished);
+		void			setReadFd(int fd);
+		void			setWriteFd(int fd);
 		
 
 		class SocketAcceptException: public std::exception

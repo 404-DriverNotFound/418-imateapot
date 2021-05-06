@@ -15,13 +15,13 @@ class Socket
 	private:
 		sockaddr_in _sockaddr;
 		uint16_t	_port;
-		int 		_fd;
+		int 		_sock_fd;
 		std::string	_ip;
 
 	public:
 		Socket(uint16_t port, uint32_t max_connection);
 
-		int getFd();
+		int getSockFd();
 		int getPort();
 		std::string getIp();
 

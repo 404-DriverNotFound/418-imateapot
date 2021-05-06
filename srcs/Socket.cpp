@@ -7,7 +7,7 @@
  */
 Socket::Socket(uint16_t port, uint32_t max_connection): _port(port)
 {
-	if ((this->_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	if ((this->_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		throw Socket::SocketCreationException();
 	memset(&(this->_sockaddr), 0x00, sizeof(sockaddr_in));
 	this->_sockaddr.sin_family = AF_INET;
@@ -15,16 +15,16 @@ Socket::Socket(uint16_t port, uint32_t max_connection): _port(port)
 	this->_sockaddr.sin_port = htons(this->_port);
 	_ip = ft_inet_ntoa(this->_sockaddr.sin_addr.s_addr);
 
-	if (bind(this->_fd, reinterpret_cast<const sockaddr *>(&(this->_sockaddr)), sizeof(sockaddr)) < 0)
+	if (bind(this->_sock_fd, reinterpret_cast<const sockaddr *>(&(this->_sockaddr)), sizeof(sockaddr)) < 0)
 		throw Socket::BindException();
-	if (listen(this->_fd, max_connection) == -1)
+	if (listen(this->_sock_fd, max_connection) == -1)
 		throw Socket::ListenException();
-	fcntl(this->_fd, F_SETFL, O_NONBLOCK);
+	fcntl(this->_sock_fd, F_SETFL, O_NONBLOCK);
 }
 
-int Socket::getFd()
+int Socket::getSockFd()
 {
-	return this->_fd;
+	return this->_sock_fd;
 }
 
 int Socket::getPort()
