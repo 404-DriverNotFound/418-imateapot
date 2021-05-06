@@ -71,6 +71,7 @@ void Webserver::startServer()
 						if ((fd = accept(this->_socks[i].getSockFd(), &tmp, &socksize)) == -1)
 							throw Client::SocketAcceptException();
 						this->_clients.push_back(Client(this->_socks[i], fd));
+						std::cout << "\033[32m[" << getCurrentTime() << "] : Client Connected!\033[0m\n"; 
 					}
 					catch(const std::exception& e)
 					{
@@ -182,7 +183,6 @@ int Webserver::readRequest(Client &client)
 		throw 503;
 	if (len == 0)
 	{
-		std::cout << "read = 0" << std::endl;
 		client.setIsReadFinished(true);
 		return CLIENT_END;
 	}
@@ -210,7 +210,7 @@ void Webserver::handleClientDone(std::map<int, int>& done_info)
 		if (rit->second != CLIENT_DONE_STATUS)
 		{
 			client->makeBasicHeader();
-			std::cout << "ERROR!!!!! " << rit->second << std::endl << std::endl;
+			std::cout << "\033[33m[ERROR] : " << rit->second << "!!!\033[0m\n";
 			client->makeErrorStatus(rit->second);
 		}
 		else
@@ -221,6 +221,7 @@ void Webserver::handleClientDone(std::map<int, int>& done_info)
 				FT_FD_CLR(client->getFd(), &(this->_fd_write));
 				close(client->getFd());
 				this->_clients.erase(client);
+				std::cout << "\033[31m[" << getCurrentTime() << "] : Client Closed!!!\033[0m\n"; 
 			}
 			else
 				client->reset(this->_fd_read, this->_fd_write);
