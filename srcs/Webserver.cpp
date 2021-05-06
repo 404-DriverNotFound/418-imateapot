@@ -187,7 +187,6 @@ int Webserver::readRequest(Client &client)
 		return CLIENT_END;
 	}
 	buff[len] = '\0';
-	// std::cout << "=========READ=========\n" << buff << "=====================\n";
 	client.parseBuffer(buff, len, this->_configs);
 	return CLIENT_CONTINUE;
 }

@@ -560,8 +560,6 @@ void Client::makeMsg()
 	StartLineReq &start_line = this->_request.getStartLine();
 	this->makeFilePath();
 
-	std::cout << start_line << std::endl;
-
 	this->_sock_status = MAKE_MSG;
 
 	if (!this->_config_location->auth.empty())
@@ -619,7 +617,6 @@ void Client::sendMsg()
 {
 	if (this->_sock_status == SEND_HEADER)
 	{
-		std::cout << "========WRITE=======\n";
 		this->_response.sendHeader(this->getFd());
 		this->_sock_status = (this->_response.getBody().empty() ? SEND_DONE : SEND_BODY);
 	}
@@ -628,8 +625,6 @@ void Client::sendMsg()
 		if (this->_response.sendBody(this->getFd()) == SEND_BODY_DONE)
 			this->_sock_status = SEND_DONE;
 	}
-	if (this->_sock_status == SEND_DONE)
-		std::cout << "=====================\n";
 }
 
 /**

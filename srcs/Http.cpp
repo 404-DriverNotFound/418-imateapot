@@ -69,7 +69,6 @@ void HttpResponse::sendHeader(int fd)
 		str += "\r\n";
 	}
 	str += "\r\n";
-	std::cout << str;
 	ret = write(fd, str.c_str(), str.length());
 }
 
