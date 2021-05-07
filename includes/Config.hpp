@@ -17,7 +17,7 @@ struct Config
 	bool			autoindex;			// def = off
 	uint32_t		timeout;			// def = 5s
 	std::string		auth;
-	bool			method[4];			// def = GET HEAD
+	bool			method[5];			// def = GET HEAD
 	std::string		cgi_path;
 	std::string		cgi_extension;
 	std::string		server_root;

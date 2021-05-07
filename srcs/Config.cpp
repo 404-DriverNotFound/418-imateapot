@@ -11,7 +11,7 @@ Config::Config():
 	timeout(5)
 {
 	method[0] = method[1] = true;
-	method[2] = method[3] = false;
+	method[2] = method[3] = method[4] = false;
 }
 
 /**
@@ -35,7 +35,7 @@ Config::Config(const Config &src, std::string &loc_path):
 	server_root(src.server_root),
 	location_path(loc_path)
 {
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 5; i++)
 		method[i] = src.method[i];
 }
 
@@ -98,7 +98,7 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	}
 	else if (!split[0].compare("method"))
 	{
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 5; i++)
 			this->method[i] = false;
 		for (size_t i = 1; i < split.size(); i++)
 		{
@@ -110,6 +110,8 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 				this->method[PUT] = true;
 			else if (!split[i].compare("POST"))
 				this->method[POST] = true;
+			else if (!split[i].compare("DELETE"))
+				this->method[DELETE] = true;
 			else
 				throw ConfigGroup::ConfigFormatException();
 		}
