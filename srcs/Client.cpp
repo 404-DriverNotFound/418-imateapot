@@ -218,19 +218,24 @@ void Client::makePostMsg()
 		this->execCGI();
 }
 
-bool Client::isCGIRequest()
+int Client::isCGIRequest()
 {
-	if (_config_location->cgi_extension.empty())
-		return false;
+	std::vector<std::string> split = ft_split(this->_request.getStartLine().path, '.');
 
-	std::vector<std::string> split = ft_split(_request.getStartLine().path, '.');
-
-	if (split[split.size() - 1] != this->_config_location->cgi_extension)
-		return false;
-	return true;
+	if (!this->_config_location->cgi_extension.empty())
+	{
+		if (!split.rbegin()->compare(this->_config_location->cgi_extension))
+			return CGI_CUSTOM;
+	}
+	if (!this->_config_location->php_path.empty())
+	{
+		if (!split.rbegin()->compare("php"))
+			return CGI_PHP;
+	}
+	return CGI_NONE;
 }
 
-char **Client::setEnv()
+char **Client::setEnv(int cgi_type)
 {
 	char								**env = 0;
 	std::map<std::string, std::string>	map_env;
@@ -263,7 +268,7 @@ char **Client::setEnv()
 	map_env["REQUEST_URI"] = this->_request.getStartLine().path ;
 	if (!this->_request.getStartLine().query_string.empty())
 		map_env["REQUEST_URI"] += "?" + this->_request.getStartLine().query_string;
-	map_env["SCRIPT_NAME"] = this->_config_location->cgi_path;
+	map_env["SCRIPT_NAME"] = (cgi_type == CGI_CUSTOM ? this->_config_location->cgi_path : this->_config_location->php_path);
 	map_env["SERVER_NAME"] = _config_location->server_name;
 	map_env["SERVER_PORT"] = ft_itos(_config_location->port);
 	map_env["SERVER_PROTOCOL"] = "HTTP/1.1";
@@ -294,13 +299,14 @@ void Client::execCGI()
 {
 	std::string tmp_name = ".TMP_FILE" + ft_itos(getFd());
 	int		ret, in_fd[2], tmp_fd;
+	int		cgi_type = this->isCGIRequest();
 	char	*args[3];
-	char	**env = this->setEnv();
+	char	**env = this->setEnv(cgi_type);
 	std::string temp_string;
 
 	this->_buffer.clear();
 
-	args[0] = strdup(this->_config_location->cgi_path.c_str());
+	args[0] = strdup(cgi_type == CGI_CUSTOM ? this->_config_location->cgi_path.c_str() : this->_config_location->php_path.c_str());
 	args[1] = strdup(this->_file_path.c_str());
 	args[2] = NULL;
 

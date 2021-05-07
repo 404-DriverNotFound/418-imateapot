@@ -32,6 +32,7 @@ Config::Config(const Config &src, std::string &loc_path):
 	auth(src.auth),
 	cgi_path(src.cgi_path),
 	cgi_extension(src.cgi_extension),
+	php_path(),
 	server_root(src.server_root),
 	location_path(loc_path)
 {
@@ -137,6 +138,10 @@ void Config::parseConfig(std::vector<std::string> &split, bool is_location)
 	else if (!split[0].compare("cgi_extension"))
 	{
 		this->cgi_extension = split[1];
+	}
+	else if (!split[0].compare("php_path"))
+	{
+		this->php_path = split[1];
 	}
 	else
 		throw ConfigGroup::ConfigFormatException();

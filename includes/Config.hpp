@@ -20,6 +20,7 @@ struct Config
 	bool			method[4];			// def = GET HEAD
 	std::string		cgi_path;
 	std::string		cgi_extension;
+	std::string		php_path;
 	std::string		server_root;
 	std::string		location_path;
 

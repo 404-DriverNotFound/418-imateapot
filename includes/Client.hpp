@@ -40,6 +40,10 @@ enum e_sock_status
 
 #define CLIENT_DONE_STATUS 1000
 
+#define CGI_NONE 0
+#define CGI_PHP 1
+#define CGI_CUSTOM 2
+
 class Webserver;
 
 class Client
@@ -71,8 +75,8 @@ class Client
 		void makePutMsg();
 		void makePostMsg();
 
-		bool isCGIRequest();
-		char **setEnv();
+		int isCGIRequest();
+		char **setEnv(int cgi_type);
         void execCGI();
 		void freeEnv(char **env);
 		void parseCGIBuffer();
