@@ -245,19 +245,24 @@ void Client::makeDeleteMsg()
 	this->_sock_status = SEND_HEADER;
 }
 
-bool Client::isCGIRequest()
+int Client::isCGIRequest()
 {
-	if (_config_location->cgi_extension.empty())
-		return false;
+	std::vector<std::string> split = ft_split(this->_request.getStartLine().path, '.');
 
-	std::vector<std::string> split = ft_split(_request.getStartLine().path, '.');
-
-	if (split[split.size() - 1] != this->_config_location->cgi_extension)
-		return false;
-	return true;
+	if (!this->_config_location->cgi_extension.empty())
+	{
+		if (!split.rbegin()->compare(this->_config_location->cgi_extension))
+			return CGI_CUSTOM;
+	}
+	if (!this->_config_location->php_path.empty())
+	{
+		if (!split.rbegin()->compare("php"))
+			return CGI_PHP;
+	}
+	return CGI_NONE;
 }
 
-char **Client::setEnv()
+char **Client::setEnv(int cgi_type)
 {
 	char								**env = 0;
 	std::map<std::string, std::string>	map_env;
@@ -287,14 +292,24 @@ char **Client::setEnv()
 	map_env["REMOTE_ADDR"] = this->_socket->getIp();
 	map_env["REQUEST_METHOD"] = numToMethod(this->_request.getStartLine().method);
 
-	map_env["REQUEST_URI"] = this->_request.getStartLine().path ;
+	map_env["REQUEST_URI"] = this->_request.getStartLine().path;
 	if (!this->_request.getStartLine().query_string.empty())
 		map_env["REQUEST_URI"] += "?" + this->_request.getStartLine().query_string;
-	map_env["SCRIPT_NAME"] = this->_config_location->cgi_path;
+	if (cgi_type == CGI_CUSTOM)
+		map_env["SCRIPT_NAME"] = this->_config_location->cgi_path;
+	else
+		map_env["SCRIPT_NAME"] = this->_file_path;
 	map_env["SERVER_NAME"] = _config_location->server_name;
 	map_env["SERVER_PORT"] = ft_itos(_config_location->port);
 	map_env["SERVER_PROTOCOL"] = "HTTP/1.1";
 	map_env["SERVER_SOFTWARE"] = "418-IAmATeapot";
+
+	if (cgi_type == CGI_PHP)
+	{
+		map_env["REDIRECT_STATUS"] = "200";
+		map_env["SCRIPT_FILENAME"] = this->_file_path;
+	}
+		
 
 	std::map<std::string, std::string>::iterator hit = this->_request.getHeaders().begin();
 	std::map<std::string, std::string>::iterator hite = this->_request.getHeaders().end();
@@ -321,13 +336,14 @@ void Client::execCGI()
 {
 	std::string tmp_name = ".TMP_FILE" + ft_itos(getFd());
 	int		ret, in_fd[2], tmp_fd;
+	int		cgi_type = this->isCGIRequest();
 	char	*args[3];
-	char	**env = this->setEnv();
+	char	**env = this->setEnv(cgi_type);
 	std::string temp_string;
 
 	this->_buffer.clear();
 
-	args[0] = strdup(this->_config_location->cgi_path.c_str());
+	args[0] = strdup(cgi_type == CGI_CUSTOM ? this->_config_location->cgi_path.c_str() : this->_config_location->php_path.c_str());
 	args[1] = strdup(this->_file_path.c_str());
 	args[2] = NULL;
 
@@ -346,12 +362,14 @@ void Client::execCGI()
 		dup2(tmp_fd, 1);
 		ret = execve(args[0], args, env);
 		free(args[0]);
-		free(args[1]);
+		if (args[1])
+			free(args[1]);
 		close(in_fd[0]);
 		exit(ret);
 	}
 	free(args[0]);
-	free(args[1]);
+	if (args[1])
+		free(args[1]);
 	close(in_fd[0]);
 	this->_write_fd = in_fd[1];
 	this->_read_fd = tmp_fd;
@@ -605,8 +623,13 @@ void Client::makeMsg()
 	{
 		switch (start_line.method)
 		{
-			case GET:
 			case POST:
+				if (this->isCGIRequest() == CGI_PHP)
+				{
+					start_line.method = PUT;
+					break;
+				}
+			case GET:
 				if (this->isCGIRequest())
 				{
 					this->execCGI();
@@ -616,6 +639,9 @@ void Client::makeMsg()
 				throw 405;
 		}
 	}
+
+	if (start_line.method == POST && this->isCGIRequest() == CGI_PHP)
+		start_line.method = PUT;
 
 	switch (start_line.method)
 	{

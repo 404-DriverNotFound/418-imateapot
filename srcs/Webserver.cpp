@@ -21,6 +21,7 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 	for (size_t i = 0; i < server_ports.size(); i++)
 	{
 		this->_socks.push_back(Socket(server_ports[i], max_connection));
+		std::cout << "\033[32m[" << getCurrentTime() << "] : Port " << server_ports[i] << " Opened!\033[0m\n"; 
 		FT_FD_SET(this->_socks[i].getSockFd(),&(this->_fd_read));
 	}
 }
