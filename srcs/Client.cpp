@@ -274,6 +274,9 @@ char **Client::setEnv(int cgi_type)
 	map_env["SERVER_PROTOCOL"] = "HTTP/1.1";
 	map_env["SERVER_SOFTWARE"] = "418-IAmATeapot";
 
+	if (cgi_type == CGI_PHP)
+		map_env["REDIRECT_STATUS"] = "200";
+
 	std::map<std::string, std::string>::iterator hit = this->_request.getHeaders().begin();
 	std::map<std::string, std::string>::iterator hite = this->_request.getHeaders().end();
 	for (; hit != hite; hit++)
