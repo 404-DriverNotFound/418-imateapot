@@ -22,7 +22,7 @@ bool 			isFilePath(const std::string &path);
 bool			isDirPath(const std::string &path);
 std::string		getStatusStr(uint16_t code);
 std::string		ft_inet_ntoa(unsigned int addr);
-uint16_t		ft_htons(uint16_t hostshort);
+uint16_t		ft_htons(uint16_t port);
 u_int32_t		ft_htonl(unsigned long int addr);
 
 #ifndef FT_FD_SETSIZE
