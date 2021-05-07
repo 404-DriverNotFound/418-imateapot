@@ -9,7 +9,8 @@ enum e_method
 	HEAD,
 	GET,
 	PUT,
-	POST
+	POST,
+	DELETE
 };
 
 int methodToNum(const std::string &);

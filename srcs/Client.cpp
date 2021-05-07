@@ -150,11 +150,11 @@ void Client::makeHeadMsg()
 	this->_response.insertToHeader("Content-Location", content_location);
 	this->_response.insertToHeader("Content-Language", "ko");
 	this->_response.insertToHeader("Content-Type", "text/plain");
+	this->_sock_status = SEND_HEADER;
 }
 
 void Client::makeGetMsg()
 {
-	std::ifstream file;
 	struct stat info;
 	std::string line;
 
@@ -165,6 +165,7 @@ void Client::makeGetMsg()
 	}
 	
 	this->makeHeadMsg();
+	this->_sock_status = MAKE_MSG;
 
 	stat(this->_file_path.c_str(), &info);
 
@@ -188,7 +189,7 @@ void Client::makePutMsg()
 {
 	int		fd;
 
-	if (isFilePath(_file_path))
+	if (isFilePath(this->_file_path))
 	{
 		fd = open(_file_path.c_str(), O_WRONLY | O_TRUNC, 0666);
 		if (fd == -1)
@@ -197,6 +198,8 @@ void Client::makePutMsg()
 	}
 	else
 	{
+		if (isDirPath(this->_file_path))
+			throw 400;
 		fd = open(_file_path.c_str(), O_CREAT | O_WRONLY, 0666);
 		if (fd == -1)
 			throw 503;
@@ -216,6 +219,30 @@ void Client::makePostMsg()
 		makeGetMsg();
 	else if (this->isCGIRequest())
 		this->execCGI();
+}
+
+void Client::makeDeleteMsg()
+{
+	if (isDirPath(this->_file_path))
+		throw 400;
+
+	if (!isFilePath(this->_file_path))
+	{
+		switch (errno)
+		{
+		case EACCES:
+			throw 403;
+		
+		case ENOENT:
+			throw 404;
+		
+		default:
+			throw 400;
+		}
+	}
+	this->_response.getStartLine().status_code = 204;
+	unlink(this->_file_path.c_str());
+	this->_sock_status = SEND_HEADER;
 }
 
 int Client::isCGIRequest()
@@ -632,6 +659,10 @@ void Client::makeMsg()
 
 	case POST:
 		this->makePostMsg();
+		break ;	
+
+	case DELETE:
+		this->makeDeleteMsg();
 		break ;
 
 	default:
@@ -727,7 +758,6 @@ void Client::makeErrorStatus(uint16_t status)
 {
 	StartLineRes &start_line = this->_response.getStartLine();
 	Config &config = *this->_config_location;
-	std::ifstream file;
 	std::string line;
 	int fd;
 

@@ -156,7 +156,7 @@ unsigned long	ft_uhextol(const std::string &str)
 std::string getHTTPTimeFormat(time_t time)
 {
 	char s[150];
-    struct tm *tm_time = std::gmtime(&time);
+	struct tm *tm_time = std::gmtime(&time);
 
 	strftime(s, sizeof(s), "%a, %d %b %Y %T GMT", tm_time);
     return (s);
@@ -164,8 +164,8 @@ std::string getHTTPTimeFormat(time_t time)
 
 std::string getCurrentTime()
 {
-    struct timeval time;
-    gettimeofday(&time, NULL);
+	struct timeval time;
+	gettimeofday(&time, NULL);
 	return getHTTPTimeFormat(time.tv_sec);
 }
 
@@ -243,5 +243,22 @@ std::string ft_inet_ntoa(unsigned int addr)
 	res += std::to_string((n / 256 / 256) % 256) + ".";
 	res += std::to_string(n / 256 / 256 / 256);
 
+	return (res);
+}
+
+uint16_t ft_htons(uint16_t port)
+{
+	uint16_t res = (((((unsigned short)(port) & 0xFF)) << 8) | (((unsigned short)(port) & 0xFF00) >> 8));
+
+	return (res);
+}
+
+u_int32_t ft_htonl(unsigned long int addr)
+{
+	u_int32_t res = (((((unsigned long)(addr) & 0xFF)) << 24) | \
+					((((unsigned long)(addr) & 0xFF00)) << 8) | \
+					((((unsigned long)(addr) & 0xFF0000)) >> 8) | \
+					((((unsigned long)(addr) & 0xFF000000)) >> 24));
+	
 	return (res);
 }
