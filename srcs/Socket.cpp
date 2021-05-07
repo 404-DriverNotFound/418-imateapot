@@ -11,8 +11,8 @@ Socket::Socket(uint16_t port, uint32_t max_connection): _port(port)
 		throw Socket::SocketCreationException();
 	memset(&(this->_sockaddr), 0x00, sizeof(sockaddr_in));
 	this->_sockaddr.sin_family = AF_INET;
-	this->_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	this->_sockaddr.sin_port = htons(this->_port);
+	this->_sockaddr.sin_addr.s_addr = ft_htonl(INADDR_ANY);
+	this->_sockaddr.sin_port = ft_htons(this->_port);
 	_ip = ft_inet_ntoa(this->_sockaddr.sin_addr.s_addr);
 
 	if (bind(this->_sock_fd, reinterpret_cast<const sockaddr *>(&(this->_sockaddr)), sizeof(sockaddr)) < 0)
