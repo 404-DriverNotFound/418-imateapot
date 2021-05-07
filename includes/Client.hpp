@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <iostream>
-#include <fstream>
 #include <string>
 
 enum e_sock_status
@@ -70,6 +69,7 @@ class Client
 		void makeGetMsg();
 		void makePutMsg();
 		void makePostMsg();
+		void makeDeleteMsg();
 
 		bool isCGIRequest();
 		char **setEnv();
