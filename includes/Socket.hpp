@@ -5,8 +5,6 @@
 #include <sys/time.h>
 #include <sys/select.h>
 #include <fcntl.h>
-#include <exception>
-#include <cstring>
 #include <unistd.h>
 #include "utils.hpp"
 
