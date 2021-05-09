@@ -3,7 +3,7 @@
 
 /**
  * std::pair(key, value)를 만들어 http 헤더(map)에 insert해주는 함수.
- * 
+ *
  * @param  {std::string} key   : key
  * @param  {std::string} value : value
  */
@@ -47,7 +47,10 @@ StartLineReq &HttpRequest::getStartLine()
 {
 	return (this->_start_line);
 }
-
+/**
+ * HttpResponse sendHeader
+ * - response header를 쓰는 함수
+ */
 void HttpResponse::sendHeader(int fd)
 {
 	size_t ret;
@@ -71,7 +74,11 @@ void HttpResponse::sendHeader(int fd)
 	str += "\r\n";
 	ret = write(fd, str.c_str(), str.length());
 }
-
+/**
+ * HttpResponse sendBody
+ * - response body를 쓰는 함수
+ * @return {int}    : SEND_BODY_DONE(모든 body 보냄), SEND_BODY_LEFT(아직 보낼 body 남음)
+ */
 int HttpResponse::sendBody(int fd)
 {
 	size_t	ret;

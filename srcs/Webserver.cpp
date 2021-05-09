@@ -21,11 +21,15 @@ Webserver::Webserver(const std::string &path, uint32_t max_connection) : _config
 	for (size_t i = 0; i < server_ports.size(); i++)
 	{
 		this->_socks.push_back(Socket(server_ports[i], max_connection));
-		std::cout << "\033[32m[" << getCurrentTime() << "] : Port " << server_ports[i] << " Opened!\033[0m\n"; 
+		std::cout << "\033[32m[" << getCurrentTime() << "] : Port " << server_ports[i] << " Opened!\033[0m\n";
 		FT_FD_SET(this->_socks[i].getSockFd(),&(this->_fd_read));
 	}
 }
 
+/**
+ * Webserver::~Webserver
+ * webserver 소멸자(모든 과정이 끝나면 fd와 socket을 닫는다)
+ */
 Webserver::~Webserver()
 {
 	std::vector<Client>::iterator client_ite = this->_clients.end();
@@ -72,7 +76,7 @@ void Webserver::startServer()
 						if ((fd = accept(this->_socks[i].getSockFd(), &tmp, &socksize)) == -1)
 							throw Client::SocketAcceptException();
 						this->_clients.push_back(Client(this->_socks[i], fd));
-						std::cout << "\033[32m[" << getCurrentTime() << "] : Client Connected!\033[0m\n"; 
+						std::cout << "\033[32m[" << getCurrentTime() << "] : Client Connected!\033[0m\n";
 					}
 					catch(const std::exception& e)
 					{
@@ -132,7 +136,7 @@ void Webserver::startServer()
 
 				if (!FT_FD_ISSET(this->_clients[i].getReadFd(), &(temp_fd_read)))
 					continue;
-				
+
 				try
 				{
 					this->_clients[i].readData(this->_fd_read);
@@ -154,7 +158,7 @@ void Webserver::startServer()
 
 				if (!FT_FD_ISSET(this->_clients[i].getWriteFd(), &(temp_fd_write)))
 					continue;
-				
+
 				try
 				{
 					this->_clients[i].writeData(this->_fd_write);
@@ -200,11 +204,16 @@ void Webserver::handleResponse(Client &client)
 		client.sendMsg();
 }
 
+/**
+ * Webserver handleClientDone : client의 연결 및 해제를 담당하는 함수(status를 통해 client를 열고 닫음)
+ *
+ * @param  {std::map<int, int>}& done_info : client의 상태 정보를 담은 map
+ */
 void Webserver::handleClientDone(std::map<int, int>& done_info)
 {
 	std::map<int, int>::reverse_iterator rite = done_info.rend();
 
-	for (std::map<int, int>::reverse_iterator rit = done_info.rbegin(); rit != rite; rit++) 
+	for (std::map<int, int>::reverse_iterator rit = done_info.rbegin(); rit != rite; rit++)
 	{
 		std::vector<Client>::iterator client = this->_clients.begin() + rit->first;
 
@@ -222,7 +231,7 @@ void Webserver::handleClientDone(std::map<int, int>& done_info)
 				FT_FD_CLR(client->getFd(), &(this->_fd_write));
 				close(client->getFd());
 				this->_clients.erase(client);
-				std::cout << "\033[31m[" << getCurrentTime() << "] : Client Closed!!!\033[0m\n"; 
+				std::cout << "\033[31m[" << getCurrentTime() << "] : Client Closed!!!\033[0m\n";
 			}
 			else
 				client->reset(this->_fd_read, this->_fd_write);

@@ -83,7 +83,7 @@ void Client::checkFilePath()
 	}
 	if (isDirPath(index_path))
 		throw 404;
-	
+
 	this->_file_path = index_path;
 	this->_response.insertToHeader("Content-Length", ft_itos(path_stat.st_size));
 }
@@ -110,7 +110,11 @@ std::string Client::makeContentLocation()
 		content_location.erase(0, config.server_root.length());
 	return (content_location);
 }
-
+/**
+ * Client makeAutoindex : autoindex 양식을 만들어주는 함수
+ *
+ * @return {std::string}  : autoindex 양식을 가진 html 문자열을 반환
+ */
 std::string Client::makeAutoindex()
 {
 	DIR *dir;
@@ -152,7 +156,11 @@ void Client::makeHeadMsg()
 	this->_response.insertToHeader("Content-Type", "text/plain");
 	this->_sock_status = SEND_HEADER;
 }
-
+/**
+ * Client makeGetMsg : GET method에 맞게 처리해주는 함수
+ * - CGI가 있을 경우 : execCGI 함수로 이동
+ * - CGI가 없을 경우 : HEAD 메세지를 만들고 autoindex가 있는지 확인 후, 요청한 내용을 그대로 반환
+ */
 void Client::makeGetMsg()
 {
 	struct stat info;
@@ -163,7 +171,7 @@ void Client::makeGetMsg()
 		this->execCGI();
 		return ;
 	}
-	
+
 	this->makeHeadMsg();
 	this->_sock_status = MAKE_MSG;
 
@@ -184,7 +192,12 @@ void Client::makeGetMsg()
 			throw 503;
 	}
 }
-
+/**
+ * Client makePutMsg : PUT method에 맞게 처리해주는 함수
+ * - file이 있는 경우 : 요청한 내용을 파일에 씀
+ * - file이 없는 경우 : 파일을 만들고 요청한 내용을 파일에 씀
+ * 필요한 header들도 추가해서 반환
+ */
 void Client::makePutMsg()
 {
 	int		fd;
@@ -212,7 +225,11 @@ void Client::makePutMsg()
 	this->_response.insertToHeader("Location", content_location);
 	this->_response.insertToHeader("Content-Location", content_location);
 }
-
+/**
+ * Client makePostMsg : POST method에 맞게 처리해주는 함수
+ * - body가 있는 경우 : CGI로 처리
+ * - body가 없는 경우 : GET method로 처리
+ */
 void Client::makePostMsg()
 {
 	if (_response.getBody().size() == 0)
@@ -220,7 +237,10 @@ void Client::makePostMsg()
 	else if (this->isCGIRequest())
 		this->execCGI();
 }
-
+/**
+ * Client makeDeleteMsg : DELETE method에 맞게 처리해주는 함수
+ * - directory path 인지 file path인지 검사한 후, directory 내의 모든 file 삭제
+ */
 void Client::makeDeleteMsg()
 {
 	if (isDirPath(this->_file_path))
@@ -232,10 +252,10 @@ void Client::makeDeleteMsg()
 		{
 		case EACCES:
 			throw 403;
-		
+
 		case ENOENT:
 			throw 404;
-		
+
 		default:
 			throw 400;
 		}
@@ -244,7 +264,12 @@ void Client::makeDeleteMsg()
 	unlink(this->_file_path.c_str());
 	this->_sock_status = SEND_HEADER;
 }
-
+/**
+ * Client isCGIRequest : CGI 요청이 들어왔는지 검사하는 함수
+ * - config file에 cgi extension, php path 유무를 검사하여 처리 방법 반환
+ *
+ * @return {int}  : CGI_CUSTOM(CGI), CGI_PHP(PHP), CGI_NONE(CGI 없음) 으로 반환
+ */
 int Client::isCGIRequest()
 {
 	std::vector<std::string> split = ft_split(this->_request.getStartLine().path, '.');
@@ -261,7 +286,11 @@ int Client::isCGIRequest()
 	}
 	return CGI_NONE;
 }
-
+/**
+ * char**Client::setEnv : cgi 처리를 위해 필요한 환경변수 세팅
+ *
+ * @param  {int} cgi_type : cgi type(.bla, .php ... etc)
+ */
 char **Client::setEnv(int cgi_type)
 {
 	char								**env = 0;
@@ -309,7 +338,7 @@ char **Client::setEnv(int cgi_type)
 		map_env["REDIRECT_STATUS"] = "200";
 		map_env["SCRIPT_FILENAME"] = this->_file_path;
 	}
-		
+
 
 	std::map<std::string, std::string>::iterator hit = this->_request.getHeaders().begin();
 	std::map<std::string, std::string>::iterator hite = this->_request.getHeaders().end();
@@ -331,7 +360,10 @@ char **Client::setEnv(int cgi_type)
 	env[i] = NULL;
 	return (env);
 }
-
+/**
+ * Client execCGI : CGI 실행 함수
+ * - pipe 함수를 사용해 요청 데이터 쓰기/읽기 처리
+ */
 void Client::execCGI()
 {
 	std::string tmp_name = ".TMP_FILE" + ft_itos(getFd());
@@ -375,7 +407,11 @@ void Client::execCGI()
 	this->_read_fd = tmp_fd;
 	this->freeEnv(env);
 }
-
+/**
+ * Client freeEnv : char **env(환경변수) 변수 해제
+ *
+ * @param  {char**} env : CGI 환경변수
+ */
 void Client::freeEnv(char **env)
 {
 	int i = 0;
@@ -384,7 +420,10 @@ void Client::freeEnv(char **env)
 		free(env[i++]);
 	free(env);
 }
-
+/**
+ * Client parseCGIBuffer : CGI buffer에서 헤더 부분만 파싱
+ *
+ */
 void Client::parseCGIBuffer()
 {
 	std::string &body = this->_response.getBody();
@@ -416,7 +455,7 @@ void Client::parseCGIBuffer()
  * Client 생성자, 생성될 때 socket의 port번호를 받고 _status는 INITIALIZE로 초기화
  * @param  {Socket &socket} : class Socket
  */
-Client::Client(Socket &socket, int fd):	
+Client::Client(Socket &socket, int fd):
 	_pid(-1),
 	_port(socket.getPort()),
 	_fd(fd),
@@ -582,10 +621,13 @@ int	Client::parseBody()
 			}
 		}
 	}
-	
+
 	return PARSE_BODY_LEFT;
 }
-
+/**
+ * Client makeBasicHeader : 기본적으로 들어가는 header 작성 함수
+ *
+ */
 void Client::makeBasicHeader()
 {
 	StartLineRes &start_line = this->_response.getStartLine();
@@ -597,7 +639,7 @@ void Client::makeBasicHeader()
 }
 
 /**
- * Client::makeMsg
+ * Client makeMsg : request msg를 기반으로 response msg(전문) 작성 함수
  *
  */
 void Client::makeMsg()
@@ -659,7 +701,7 @@ void Client::makeMsg()
 
 	case POST:
 		this->makePostMsg();
-		break ;	
+		break ;
 
 	case DELETE:
 		this->makeDeleteMsg();
@@ -670,6 +712,10 @@ void Client::makeMsg()
 	}
 }
 
+/**
+ * Client sendMsg : 작성된 메세지 반환 함수
+ *
+ */
 void Client::sendMsg()
 {
 	if (this->_sock_status == SEND_HEADER)
@@ -833,6 +879,11 @@ void Client::makeErrorStatus(uint16_t status)
 		throw 503;
 }
 
+/**
+ * Client readData : fd_read_set에서 read할 부분을 찾아 데이터를 읽는 함수
+ *
+ * @param  {fd_set} fd_read_set : 읽을 내용을 표시해 놓은 fd_set
+ */
 void Client::readData(fd_set &fd_read_set)
 {
 	int len, status;
@@ -848,10 +899,10 @@ void Client::readData(fd_set &fd_read_set)
 	}
 
 	len = read(this->_read_fd, buf, BUF_SIZE - 1);
-	
+
 	if (len < 0)
 		throw 503;
-	
+
 	if (len == 0)
 	{
 		close(this->_read_fd);
@@ -867,7 +918,7 @@ void Client::readData(fd_set &fd_read_set)
 		this->_sock_status = SEND_HEADER;
 		return ;
 	}
-	
+
 	buf[len] = '\0';
 	this->_response.getBody() += buf;
 
@@ -875,10 +926,15 @@ void Client::readData(fd_set &fd_read_set)
 		this->parseCGIBuffer();
 }
 
+/**
+ * Client writeData : fd_write_set을 통해 데이터를 write할 부분을 찾아 write해주는 함수
+ *
+ * @param  {fd_set} fd_write_set : 쓸 내용을 표시해둔 ft_set
+ */
 void Client::writeData(fd_set &fd_write_set)
 {
 	int ret;
-	
+
 	ret = write(this->_write_fd, this->_request.getBody().c_str(), this->_request.getBody().length());
 	if (ret == -1)
 		throw 503;
@@ -894,6 +950,12 @@ bool Client::isConfigSet()
 	return (this->_config_location != NULL);
 }
 
+/**
+ * Client reset : 1개의 클라이언트가 모든 과정을 마치면 초기화해주는 함수
+ *
+ * @param  {fd_set} fd_read_set : 읽을 내용을 표시해 놓은 fd_set
+ * @param  {fd_set} fd_write_set : 쓸 내용을 표시해둔 ft_set
+ */
 void Client::reset(fd_set &fd_read_set, fd_set &fd_write_set)
 {
 	this->_pid = -1;

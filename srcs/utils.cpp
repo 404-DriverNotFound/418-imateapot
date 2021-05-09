@@ -89,7 +89,11 @@ int	ft_atoi(const std::string &str)
 	result *= minus_flag;
 	return static_cast<int>(result);
 }
-
+/**
+ * ft_itos : int를 string으로 변환하는 함수
+ * @param  {int} num      : 변환할 숫자
+ * @return {std::string}  : 변환된 문자
+ */
 std::string ft_itos(int num)
 {
 	std::string str;
@@ -109,6 +113,11 @@ std::string ft_itos(int num)
 	return (str);
 }
 
+/**
+ *
+ * @param  {unsigned} long :
+ * @return {std::string}   :
+ */
 std::string ft_ultohex(unsigned long num)
 {
 	std::string str;
@@ -127,7 +136,7 @@ std::string ft_ultohex(unsigned long num)
 }
 
 /**
- * ft_atoi
+ * ft_uhextol
  * @brief  cstdlib의 strtol의 대체함수입니다. 그중 unsigned 16진수에 한정지어 처리합니다.
  * @param  {std::string} str : 16진수 숫자의 문자열
  * @return {int}             : 변환된 숫자
@@ -153,6 +162,11 @@ unsigned long	ft_uhextol(const std::string &str)
 	return result;
 }
 
+/**
+ * getHTTPTimeFormat : 형식에 맞는 시간을 만들어주는 함수
+ * @param  {time_t} time  : time_t 구조체
+ * @return {std::string}  : 형식에 맞는 시간을 담은 문자열
+ */
 std::string getHTTPTimeFormat(time_t time)
 {
 	char s[150];
@@ -162,6 +176,10 @@ std::string getHTTPTimeFormat(time_t time)
     return (s);
 }
 
+/**
+ * getCurrentTime : 현재 시각을 구하는 함수
+ * @return {std::string}  : 현재 시각 문자열
+ */
 std::string getCurrentTime()
 {
 	struct timeval time;
@@ -169,10 +187,15 @@ std::string getCurrentTime()
 	return getHTTPTimeFormat(time.tv_sec);
 }
 
+/**
+ * isFilePath : path가 file path인지 체크하는 함수
+ * @param  {std::string} path : 경로
+ * @return {bool}             : 1 : 파일 경로, 0 : 파일 경로 x
+ */
 bool isFilePath(const std::string &path)
 {
 	struct stat info;
-	
+
 	if (stat(path.c_str(), &info) == 0)
 	{
 		if (S_ISREG(info.st_mode))
@@ -184,6 +207,11 @@ bool isFilePath(const std::string &path)
 		return 0;
 }
 
+/**
+ * isDirPath : path가 directory path인지 체크하는 함수
+ * @param  {std::string} path : 경로
+ * @return {bool}             : 1 : 폴더 경로, 0 : 폴더 경로 x
+ */
 bool isDirPath(const std::string &path)
 {
 	struct stat info;
@@ -192,13 +220,17 @@ bool isDirPath(const std::string &path)
 	{
 		if (S_ISDIR(info.st_mode))
 			return 1;
-		else 
+		else
 			return 0;
 	}
 	else
 		return 0;
 }
-
+/**
+ * getStatusStr : 상태 코드에 따른 메세지 문자열을 구해주는 함수
+ * @param  {uint16_t} code : 상태 코드
+ * @return {std::string}   : 상태 코드에 따른 상태 메세지 문자열
+ */
 std::string getStatusStr(uint16_t code)
 {
     switch (code) {
@@ -233,7 +265,11 @@ std::string getStatusStr(uint16_t code)
     }
     return ("");
 }
-
+/**
+ * ft_inet_ntoa : socket ip를 구하기 위한 함수
+ * @param  {unsigned} int : socket의 addr
+ * @return {std::string}  : socket의 ip
+ */
 std::string ft_inet_ntoa(unsigned int addr)
 {
 	unsigned int n = addr;
@@ -246,6 +282,11 @@ std::string ft_inet_ntoa(unsigned int addr)
 	return (res);
 }
 
+/**
+ * ft_htons : htons 함수 구현(htons : short intger(일반적으로 2byte)데이터를 네트워크 byte order로 변경)
+ * @param  {uint16_t} port : socket의 port
+ * @return {uint16_t}      : 변경된 port
+ */
 uint16_t ft_htons(uint16_t port)
 {
 	uint16_t res = (((((unsigned short)(port) & 0xFF)) << 8) | (((unsigned short)(port) & 0xFF00) >> 8));
@@ -253,12 +294,17 @@ uint16_t ft_htons(uint16_t port)
 	return (res);
 }
 
+/**
+ * ft_htonl : htonl 함수 구현(htonl : long intger(일반적으로 4byte)데이터를 네트워크 byte order로 변경)
+ * @param  {unsigned} long : socket addr
+ * @return {u_int32_t}     : 변경된 socket addr
+ */
 u_int32_t ft_htonl(unsigned long int addr)
 {
 	u_int32_t res = (((((unsigned long)(addr) & 0xFF)) << 24) | \
 					((((unsigned long)(addr) & 0xFF00)) << 8) | \
 					((((unsigned long)(addr) & 0xFF0000)) >> 8) | \
 					((((unsigned long)(addr) & 0xFF000000)) >> 24));
-	
+
 	return (res);
 }

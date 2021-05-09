@@ -40,7 +40,11 @@ std::string numToMethod(const e_method num)
 		return "DELETE";
 	return "ERROR";
 }
-
+/**
+ *
+ * @param  {bool*} methods : config에 있는 method[n]의 bool값
+ * @return {std::string}   : method list
+ */
 std::string makeMethodList(bool *methods)
 {
 	std::string	list;
