@@ -6,20 +6,20 @@
  * @param  {std::ifstream} config_file : argv[1](config file 경로)
  * @param  {std::string} line          : gnl을 통해 읽은 라인
  */
-void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
+void ConfigGroup::parseServer(int config_fd, std::string &line, int &gnl_status)
 {
 	bool is_location_start = false;
 	bool is_root_set = false;
 	std::vector<Config> server_vector;
 	Config server_config;
 
-	std::getline(config_file, line);
+	gnl_status = ft_getline(config_fd, line);
 
-	while (!config_file.eof())
+	while (gnl_status == GNL_OK)
 	{
 		if (isBlankLine(line))
 		{
-			std::getline(config_file, line);
+			gnl_status = ft_getline(config_fd, line);
 			continue;
 		}
 		if (line[0] != '\t')
@@ -34,7 +34,7 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
             if (split.size() > 2)
                 throw ConfigGroup::ConfigFormatException();
 			is_location_start = true;
-            server_vector.push_back(parseLocation(config_file, line, split[1], server_config));
+            server_vector.push_back(parseLocation(config_fd, line, split[1], server_config, gnl_status));
 			continue;
 		}
 		if (is_location_start ||
@@ -46,7 +46,7 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 
         server_config.parseConfig(split, false);
 		is_root_set = true;
-		std::getline(config_file, line);
+		gnl_status = ft_getline(config_fd, line);
     }
 	if (server_config.cgi_path.empty() != server_config.cgi_extension.empty())
 		throw ConfigGroup::ConfigFormatException();
@@ -57,6 +57,7 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
 
 	_configs.push_back(server_vector);
 }
+
 /**
  * parseLocation
  * server단 안에 있는 location부분을 파싱하는 함수
@@ -66,18 +67,18 @@ void ConfigGroup::parseServer(std::ifstream &config_file, std::string &line)
  * @param  {Config} server_config      : Config 구조체
  * @return {Config}                    : location의 정보가 들어간 Config 구조체
  */
-Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line, std::string &loc, Config &server_config)
+Config ConfigGroup::parseLocation(int config_fd, std::string &line, std::string &loc, Config &server_config, int &gnl_status)
 {
 	bool is_root_set = false;
     Config location_config(server_config, loc);
 
-	std::getline(config_file, line);
+	gnl_status = ft_getline(config_fd, line);
 
-	while (!config_file.eof())
+	while (gnl_status == GNL_OK)
     {
         if (isBlankLine(line))
 		{
-			std::getline(config_file, line);
+			gnl_status = ft_getline(config_fd, line);
             continue;
 		}
 		
@@ -96,7 +97,7 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
 
         location_config.parseConfig(split, true);
 		is_root_set = true;
-		std::getline(config_file, line);
+		gnl_status = ft_getline(config_fd, line);
     }
 	if (location_config.cgi_path.empty() != location_config.cgi_extension.empty())
 		throw ConfigGroup::ConfigFormatException();
@@ -111,28 +112,29 @@ Config ConfigGroup::parseLocation(std::ifstream &config_file, std::string &line,
  */
 ConfigGroup::ConfigGroup(const std::string &path, uint32_t max_connection = 20): _max_connection(max_connection)
 {
-    std::ifstream config_file(path.c_str());
+	int gnl_status;
+	int config_fd = open(path.c_str(), O_RDONLY);
 
-    if (!config_file.is_open())
+    if (config_fd < 0)
 		throw ConfigGroup::NoConfigFileException();
 
 	std::string line;
-    std::getline(config_file, line);
+	gnl_status = ft_getline(config_fd, line);
 
-    while (!config_file.eof())
+    while (gnl_status == GNL_OK)
     {
         if (isBlankLine(line))
 		{
-			std::getline(config_file, line);
+			gnl_status = ft_getline(config_fd, line);
             continue;
 		}
         if (line.compare("server"))
             throw ConfigGroup::ConfigFormatException();
-        this->parseServer(config_file, line);
+        this->parseServer(config_fd, line, gnl_status);
     }
+	close(config_fd);
 	if (!checkDupServer())
 		throw ConfigGroup::ConfigFormatException();
-    config_file.close();
 }
 
 ConfigGroup::~ConfigGroup() {}

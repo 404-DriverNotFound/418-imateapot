@@ -13,8 +13,8 @@ class ConfigGroup
 		uint32_t							_max_connection; // def = 20
 		std::vector< std::vector<Config> >	_configs;
 
-		void parseServer(std::ifstream &config_file, std::string &line);
-		Config parseLocation(std::ifstream &config_file, std::string &line, std::string &loc, Config &server_config);
+		void parseServer(int config_fd, std::string &line, int &gnl_status);
+		Config parseLocation(int config_fd, std::string &line, std::string &loc, Config &server_config, int &gnl_status);
 
 	public:
 		ConfigGroup(const std::string &path, uint32_t max_connection); // constructor

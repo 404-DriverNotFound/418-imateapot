@@ -8,7 +8,17 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 
-std::vector<std::string> ft_split(std::string str, char delim);
+#define GNL_BUFFER 1024
+#define GNL_OK 1
+#define GNL_EOF 0
+
+class GNLException: public std::exception
+{
+	virtual const char *what() const throw();
+};
+
+int							ft_getline(int fd, std::string &line);
+std::vector<std::string>	ft_split(std::string str, char delim);
 
 bool			isBlankLine(const std::string &line);
 void			ft_trim(std::string &str, const std::string cut);

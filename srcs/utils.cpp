@@ -1,6 +1,54 @@
 #include "webserv.hpp"
 
 /**
+ * ft_getline
+ * @brief  받아온 fd로 (개행기준) 한줄한줄씩 입력을 받는 함수
+ * @param  {int} fd             : 입력받을 file description
+ * @param  {std::string &} line : 딱 한줄을 저장할 변수
+ * @return {int} result         : 결과 status값
+ */
+int ft_getline(int fd, std::string &line)
+{
+	size_t len = 0;
+	char buff[GNL_BUFFER];
+	static std::string str[FT_FD_SETSIZE];
+
+	if (fd < 0 || fd > FT_FD_SETSIZE || read(fd, buff, 0))
+		throw GNLException();
+	while (str[fd].find('\n') == std::string::npos && ((len = read(fd, buff, GNL_BUFFER - 1)) > 0))
+	{
+		buff[len] = '\0';
+		str[fd].append(buff);
+	}
+	if (len < 0)
+	{
+		str[fd].erase();
+		throw GNLException();
+	}
+	if (len == 0 && str[fd].empty())
+	{
+		str[fd].erase();
+		line = "";
+		return GNL_EOF;
+	}
+
+	len = str[fd].find('\n');
+	len = (len == std::string::npos ? str[fd].length() : len);
+	line = str[fd].substr(0, len);
+	int result = (len == str[fd].length() ? GNL_EOF : GNL_OK);
+	if (result == GNL_EOF)
+		str[fd].erase();
+	else
+		str[fd].erase(0, len + 1);
+	return result;
+}
+
+const char *GNLException::what() const throw()
+{
+    return ("GNLException: Error while running ft_getline!");
+}
+
+/**
  * ft_split
  * @brief  문자열을 잘라 vector로 반환해주는 함수
  * @param  {std::string} str           : 자를 문자열
