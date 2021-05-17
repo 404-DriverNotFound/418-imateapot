@@ -555,6 +555,7 @@ void Client::setClientResReady(ConfigGroup &group)
 		}
 		return;
 	}
+	throw 400;
 }
 /**
  * Client::parseBody
